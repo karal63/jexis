@@ -3,6 +3,7 @@ package com.jexis.jexis_backend.authorization.presentation;
 import com.jexis.jexis_backend.authorization.application.dto.CreateAuthorizationDto;
 import com.jexis.jexis_backend.authorization.application.dto.UpdateAuthorizationDto;
 import com.jexis.jexis_backend.authorization.application.useCases.CreateAuthorizationUseCase;
+import com.jexis.jexis_backend.authorization.application.useCases.CheckAuthorizationEligibilityUseCase;
 import com.jexis.jexis_backend.authorization.application.useCases.UpdateAuthorizationUseCase;
 import com.jexis.jexis_backend.authorization.domain.enums.AuthorizationStatus;
 import com.jexis.jexis_backend.common.logging.AsyncLogger;
@@ -22,6 +23,7 @@ import java.util.Map;
 @RequestMapping("/webhooks/authorizations")
 public class AuthorizationWebhookController {
     private final SyncBalanceUseCase syncBalanceUseCase;
+    private final CheckAuthorizationEligibilityUseCase checkAuthorizationEligibility;
     @Value("${stripe.webhook.secret.authorization}")
     private String webhookSecret;
     private final AsyncLogger logger;
@@ -31,7 +33,9 @@ public class AuthorizationWebhookController {
     public AuthorizationWebhookController(
             AsyncLogger logger,
             CreateAuthorizationUseCase createAuthorizationUseCase,
-            UpdateAuthorizationUseCase updateAuthorizationUseCase, SyncBalanceUseCase syncBalanceUseCase) {
+            UpdateAuthorizationUseCase updateAuthorizationUseCase, SyncBalanceUseCase syncBalanceUseCase,
+            CheckAuthorizationEligibilityUseCase checkAuthorizationEligibility) {
+        this.checkAuthorizationEligibility = checkAuthorizationEligibility;
         this.logger = logger;
         this.createAuthorizationUseCase = createAuthorizationUseCase;
         this.updateAuthorizationUseCase = updateAuthorizationUseCase;
@@ -89,24 +93,20 @@ public class AuthorizationWebhookController {
     }
 
     private ResponseEntity<Map<String, Object>> handleAuthorizationRequest(Event event) {
-        try  {
-          StripeObject object = event.getDataObjectDeserializer()
-                   .getObject().orElseThrow(() -> new IllegalStateException("Unable to deserialize object"));
-
-           Authorization authorization = (Authorization) object;
-
-           logger.info("STRIPE", "Issuing authorization request received");
-             
-           Boolean approved = true;
-            return ResponseEntity.ok()
-                    .header("Stripe-Version", "2026-06-24.dahlia")
-                    .body(Map.of(
-                            "approved", approved
-                    ));
+        boolean approved = false;
+        try {
+            StripeObject object = event.getDataObjectDeserializer()
+                    .getObject().orElseThrow(() -> new IllegalStateException("Unable to deserialize object"));
+            Authorization authorization = (Authorization) object;
+            approved = checkAuthorizationEligibility.execute(authorization.getCard().getId());
         } catch (Exception ex) {
-           logger.info("STRIPE", "Failed to process authorization request: " + ex.getMessage());
-           return ResponseEntity.badRequest().build();
+            // A signed request that cannot be verified must receive an explicit decline.
+            logger.info("STRIPE", "Authorization request declined: " + ex.getMessage());
         }
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Stripe-Version", "2026-06-24.dahlia")
+                .body(Map.of("approved", approved));
     }
 
     private void handleAuthorizationUpdated(Event event) {
@@ -128,14 +128,6 @@ public class AuthorizationWebhookController {
 
         updateAuthorizationUseCase.execute(dto);
         logger.info("STRIPE", "Issuing authorization updated");
-    }
-
-    private String getCardId(Authorization authorization) {
-        Object card = authorization.getCard();
-        if (card instanceof String) {
-            return (String) card;
-        }
-        return card != null ? card.toString() : null;
     }
 
     private AuthorizationStatus mapAuthorizationStatus(String stripeStatus) {
