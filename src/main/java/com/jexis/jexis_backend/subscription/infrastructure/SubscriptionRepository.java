@@ -39,7 +39,7 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, UUID
                   AND s.currentPeriodEnd > :now
                   AND s.status != SubscriptionStatus.CANCELED
             """)
-    Subscription findActiveSubscription(
+    Optional<Subscription> findActiveSubscription(
             UUID accountId,
             LocalDateTime now
     );

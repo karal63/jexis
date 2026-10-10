@@ -16,6 +16,7 @@ import com.jexis.jexis_backend.subscription.application.dto.CreateSubscriptionDt
 import com.jexis.jexis_backend.subscription.application.dto.SaveSubscriptionEntitlementDto;
 import com.jexis.jexis_backend.subscription.application.useCases.*;
 import com.jexis.jexis_backend.subscription.domain.entities.Subscription;
+import com.jexis.jexis_backend.subscription.domain.exceptions.SubscriptionNotFoundException;
 import com.jexis.jexis_backend.subscription.domain.entities.SubscriptionEntitlement;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -133,7 +134,11 @@ public class SubscriptionController {
     @GetMapping("/accounts/{accountId}/active-subscription")
     @PreAuthorize("@subscriptionAuthorization.canViewActive(authentication.principal.id(), #accountId)")
     public SubscriptionResponseDto getAccountSubscription(@PathVariable UUID accountId) {
-        return dtoHelper.toSubscriptionDtoWithOptionalPaymentMethod(getActiveAccountSubscriptionUseCase.execute(accountId));
+        Subscription subscription = getActiveAccountSubscriptionUseCase.execute(accountId);
+        if (subscription == null) {
+            throw new SubscriptionNotFoundException();
+        }
+        return dtoHelper.toSubscriptionDtoWithOptionalPaymentMethod(subscription);
     }
 
     private SubscriptionPageResponseDto mapToPageResponse(Page<Subscription> subscriptionsPage) {
