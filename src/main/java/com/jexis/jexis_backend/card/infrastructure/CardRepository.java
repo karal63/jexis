@@ -71,4 +71,27 @@ public interface CardRepository extends JpaRepository<Card, UUID> {
             @Param("status") CardStatus status,
             @Param("brand") String brand,
             @Param("type") String type);
+
+    @Query("""
+                SELECT c FROM Card c
+                WHERE c.isDeleted = false
+                  AND c.user.id = :userId
+                  AND c.treasuryAccount.account.id = :accountId AND c.cardHolder.account.id = :accountId
+                  AND (
+                      :search IS NULL
+                      OR lower(c.last4) LIKE concat('%', CAST(:search AS text), '%')
+                      OR lower(c.cardHolder.name) LIKE concat('%', CAST(:search AS text), '%')
+                  )
+                  AND (:status IS NULL OR c.status = :status)
+                  AND (:brand IS NULL OR lower(c.brand) = lower(CAST(:brand AS text)))
+                  AND (:type IS NULL OR lower(c.type) = lower(CAST(:type AS text)))
+            """)
+    Page<Card> findMemberCardsWithFilters(
+            Pageable pageable,
+            @Param("accountId") UUID accountId,
+            @Param("userId") UUID userId,
+            @Param("search") String search,
+            @Param("status") CardStatus status,
+            @Param("brand") String brand,
+            @Param("type") String type);
 }

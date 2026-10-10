@@ -94,4 +94,33 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
             @Param("type") TransactionType type,
             @Param("status") TransactionStatus status,
             @Param("direction") TransactionDirection direction);
+
+    @Query("""
+            SELECT t FROM Transaction t
+            WHERE t.card.user.id = :userId
+                  AND t.wallet.account.id = :accountId
+                  AND t.card.treasuryAccount.account.id = :accountId
+              AND (
+                :search IS NULL
+                OR lower(CAST(t.id AS string)) LIKE concat('%', lower(CAST(:search AS text)), '%')
+                OR lower(t.bankName) LIKE concat('%', lower(CAST(:search AS text)), '%')
+                OR lower(t.bankAccountLast4) LIKE concat('%', lower(CAST(:search AS text)), '%')
+                OR lower(t.routingNumber) LIKE concat('%', lower(CAST(:search AS text)), '%')
+                OR lower(t.merchantName) LIKE concat('%', lower(CAST(:search AS text)), '%')
+                OR lower(t.merchantCategory) LIKE concat('%', lower(CAST(:search AS text)), '%')
+                OR lower(t.merchantCity) LIKE concat('%', lower(CAST(:search AS text)), '%')
+                OR lower(t.merchantCountry) LIKE concat('%', lower(CAST(:search AS text)), '%')
+              )
+            AND (:type IS NULL OR t.type = :type)
+            AND (:status IS NULL OR t.status = :status)
+            AND (:direction IS NULL OR t.direction = :direction)
+            """)
+    Page<Transaction> findMemberTransactionsWithFilters(
+            Pageable pageable,
+            @Param("accountId") UUID accountId,
+            @Param("userId") UUID userId,
+            @Param("search") String search,
+            @Param("type") TransactionType type,
+            @Param("status") TransactionStatus status,
+            @Param("direction") TransactionDirection direction);
 }

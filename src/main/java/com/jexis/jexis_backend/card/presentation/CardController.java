@@ -88,7 +88,7 @@ public class CardController {
     }
 
     @GetMapping("/wallets/{id}/cards")
-    @PreAuthorize("@cardAuthorization.canViewAll(authentication.principal.id(), #id)")
+    @PreAuthorize("@userAuthorization.isAdmin(authentication.principal.roles()) or @cardAuthorization.canViewAll(authentication.principal.id(), #id)")
     public CardPageResponseDto getCardsByAccount(
             @PathVariable UUID id,
             @RequestParam(defaultValue = "1") int page,
@@ -113,7 +113,7 @@ public class CardController {
 
     // Now work on below endpoints, change authorization
     @GetMapping("/cards/{cardId}")
-    @PreAuthorize("@cardAuthorization.canView(authentication.principal.id(), #cardId)")
+    @PreAuthorize("@userAuthorization.isAdmin(authentication.principal.roles()) or @cardAuthorization.canView(authentication.principal.id(), #cardId)")
     public CardResponseDto find(@PathVariable UUID cardId) {
         Card card = getCardUseCase.execute(cardId);
         return dtoHelper.toCardDto(card);
