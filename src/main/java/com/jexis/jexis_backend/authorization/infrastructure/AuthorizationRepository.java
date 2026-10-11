@@ -37,7 +37,7 @@ public interface AuthorizationRepository extends JpaRepository<Authorization, UU
 
     @Query("""
             SELECT a FROM Authorization a 
-                WHERE (
+                WHERE a.wallet.id = :walletId AND (
                     :search IS NULL 
                     OR lower(a.merchantCategory) LIKE concat('%', CAST(:search AS text), '%') 
                     OR lower(a.merchantName) LIKE concat('%', CAST(:search AS text), '%')
@@ -49,6 +49,29 @@ public interface AuthorizationRepository extends JpaRepository<Authorization, UU
             """)
     Page<Authorization> findWalletAuthorizationsWithFilters(
             @Param("walletId") UUID walletId,
+            Pageable pageable,
+            @Param("search") String search,
+            @Param("approved") Boolean approved,
+            @Param("status") AuthorizationStatus status);
+
+    @Query("""
+            SELECT a FROM Authorization a
+                WHERE a.card.user.id = :userId
+                  AND a.wallet.account.id = :accountId
+                  AND a.card.treasuryAccount.account.id = :accountId
+                AND (
+                    :search IS NULL
+                    OR lower(a.merchantCategory) LIKE concat('%', CAST(:search AS text), '%')
+                    OR lower(a.merchantName) LIKE concat('%', CAST(:search AS text), '%')
+                    OR lower(a.merchantCity) LIKE concat('%', CAST(:search AS text), '%')
+                    OR lower(a.merchantCountry) LIKE concat('%', CAST(:search AS text), '%')
+                )
+                AND (:approved IS NULL OR a.approved = :approved)
+                AND (:status IS NULL OR a.status = :status)
+            """)
+    Page<Authorization> findMemberAuthorizationsWithFilters(
+            @Param("accountId") UUID accountId,
+            @Param("userId") UUID userId,
             Pageable pageable,
             @Param("search") String search,
             @Param("approved") Boolean approved,

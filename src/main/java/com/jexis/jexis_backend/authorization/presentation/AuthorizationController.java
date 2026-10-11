@@ -75,7 +75,7 @@ public class AuthorizationController {
      * @return the matching authorization entity
      */
     @GetMapping("/authorizations/{id}")
-    @PreAuthorize("@authorizationAuthorization.canView(authentication.principal.id(), #id)")
+    @PreAuthorize("@userAuthorization.isAdmin(authentication.principal.roles()) or @authorizationAuthorization.canView(authentication.principal.id(), #id)")
     public AuthorizationResponseDto getAuthorization(@PathVariable UUID id) {
         Authorization authorization = getAuthorizationUseCase.execute(id);
         return dtoHelper.toAuthorizationDto(authorization);
@@ -94,7 +94,7 @@ public class AuthorizationController {
      * @return paginated authorization response for the wallet
      */
     @GetMapping("/wallets/{walletId}/authorizations")
-    @PreAuthorize("@authorizationAuthorization.canViewWallet(authentication.principal.id(), #walletId)")
+    @PreAuthorize("@userAuthorization.isAdmin(authentication.principal.roles()) or @authorizationAuthorization.canViewWallet(authentication.principal.id(), #walletId)")
     public AuthorizationPageResponseDto getWalletAuthorizations(
             @PathVariable UUID walletId,
             @RequestParam(defaultValue = "0") int page,

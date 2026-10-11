@@ -17,6 +17,6 @@ public class GetActiveAccountSubscriptionUseCase {
         return subscriptionRepository.findActiveSubscription(
                 accountId,
                 LocalDateTime.now()
-        );
+        ).orElse(null);
     }
 }

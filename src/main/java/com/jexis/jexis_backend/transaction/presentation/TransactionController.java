@@ -89,7 +89,7 @@ public class TransactionController {
      * @return the matching transaction entity
      */
     @GetMapping("/transactions/{id}")
-    @PreAuthorize("@transactionAuthorization.canView(authentication.principal.id(), #id)")
+    @PreAuthorize("@userAuthorization.isAdmin(authentication.principal.roles()) or @transactionAuthorization.canView(authentication.principal.id(), #id)")
     public TransactionResponseDto getTransaction(@PathVariable UUID id) {
         Transaction transaction = getTransactionUseCase.execute(id);
         return dtoHelper.toTransactionDto(transaction);
@@ -103,7 +103,7 @@ public class TransactionController {
      * @return list of transactions for the wallet
      */
     @GetMapping("/wallets/{walletId}/transactions")
-    @PreAuthorize("@transactionAuthorization.canViewWallet(authentication.principal.id(), #walletId)")
+    @PreAuthorize("@userAuthorization.isAdmin(authentication.principal.roles()) or @transactionAuthorization.canViewWallet(authentication.principal.id(), #walletId)")
     public TransactionPageResponseDto getWalletTransactions(
             @PathVariable UUID walletId,
             @RequestParam(defaultValue = "1") int page,
@@ -127,7 +127,7 @@ public class TransactionController {
      * @return list of transactions for the card
      */
     @GetMapping("/cards/{cardId}/transactions")
-    @PreAuthorize("@cardAuthorization.canView(authentication.principal.id(), #cardId)")
+    @PreAuthorize("@userAuthorization.isAdmin(authentication.principal.roles()) or @cardAuthorization.canView(authentication.principal.id(), #cardId)")
     public TransactionPageResponseDto getCardTransactions(
             @PathVariable UUID cardId,
             @RequestParam(defaultValue = "1") int page,

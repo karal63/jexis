@@ -20,4 +20,11 @@ public class GetMemberUseCase {
         Member member = repo.findById(id).orElseThrow(() -> new MemberNotFoundException());
         return member;
     }
+    public Member execute(UUID accountId, UUID memberId) {
+        Member member = execute(memberId);
+        if (!member.getAccount().getId().equals(accountId)) {
+            throw new MemberNotFoundException();
+        }
+        return member;
+    }
 }

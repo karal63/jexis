@@ -56,6 +56,23 @@ class CheckAccountResourceLimitUseCaseTest {
     }
 
     @Test
+    void eligibilityUsesUtcRegardlessOfServerTimezone() {
+        var originalZone = java.util.TimeZone.getDefault();
+        try {
+            java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Pacific/Honolulu"));
+            var before = java.time.LocalDateTime.now(java.time.ZoneOffset.UTC);
+            when(subscriptions.findEligibleForResourceLimits(eq(accountId), any(), any()))
+                    .thenReturn(List.of(subscription));
+            checker.requireEligibleSubscription(accountId);
+            var timestamp = ArgumentCaptor.forClass(java.time.LocalDateTime.class);
+            verify(subscriptions).findEligibleForResourceLimits(eq(accountId), timestamp.capture(), any());
+            assertThat(timestamp.getValue()).isBetween(before, java.time.LocalDateTime.now(java.time.ZoneOffset.UTC));
+        } finally {
+            java.util.TimeZone.setDefault(originalZone);
+        }
+    }
+
+    @Test
     void checksExactBoundaryAndAvoidsOverflow() {
         limit("10");
         when(cards.countResourceUsage(eq(accountId), any())).thenReturn(8L);

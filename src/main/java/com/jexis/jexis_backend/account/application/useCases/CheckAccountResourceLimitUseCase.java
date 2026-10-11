@@ -14,6 +14,7 @@ import com.jexis.jexis_backend.subscription.domain.enums.SubscriptionStatus;
 import com.jexis.jexis_backend.subscription.infrastructure.SubscriptionRepository;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
@@ -83,7 +84,7 @@ public class CheckAccountResourceLimitUseCase {
     }
 
     private List<Subscription> eligibleSubscriptions(UUID accountId) {
-        return subscriptionRepository.findEligibleForResourceLimits(accountId, LocalDateTime.now(),
+        return subscriptionRepository.findEligibleForResourceLimits(accountId, LocalDateTime.now(ZoneOffset.UTC),
                 List.of(SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIALING));
     }
 

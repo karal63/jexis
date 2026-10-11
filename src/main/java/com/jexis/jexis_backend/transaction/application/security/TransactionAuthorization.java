@@ -4,7 +4,6 @@ import com.jexis.jexis_backend.member.application.useCases.HasRoleUseCase;
 import com.jexis.jexis_backend.member.domain.enums.Role;
 import com.jexis.jexis_backend.transaction.application.useCases.GetTransactionUseCase;
 import com.jexis.jexis_backend.transaction.domain.entities.Transaction;
-import com.jexis.jexis_backend.transaction.domain.enums.TransactionType;
 import com.jexis.jexis_backend.wallet.application.useCases.GetWalletUseCase;
 import com.jexis.jexis_backend.wallet.domain.entities.Wallet;
 import org.springframework.stereotype.Component;
@@ -42,7 +41,7 @@ public class TransactionAuthorization {
     }
 
     private boolean isCardTransactionOwner(Transaction transaction, UUID userId) {
-        return (transaction.getType().equals(TransactionType.CARD_TRANSACTION) && transaction.getCard().getUser().getId().equals(userId));
+        return transaction.getCard() != null && transaction.getCard().getUser().getId().equals(userId);
     }
 }
 

@@ -57,3 +57,31 @@ A pending replacement cannot be edited or deleted. Completed replacements may pr
 ## Verification
 
 `./gradlew test` covers API method authorization, limits and overrides, status/date boundaries, bootstrap owner creation, account isolation, blocked issuance, replacement failures/retries, and concurrent card/member creation. Database concurrency tests use isolated H2 in PostgreSQL compatibility mode; repeat deployment smoke tests against PostgreSQL before release.
+
+## Existing card spending
+
+`issuing_authorization.request` resolves the issued card locally and requires exactly one eligible subscription
+for its owning account using `requireEligibleSubscription`. ACTIVE/TRIALING and the current period boundaries
+are the same as creation checks and are evaluated in UTC, matching stored Stripe periods. Past-due, unpaid, paused, canceled, missing, expired, or ambiguous subscriptions
+do not allow spending. Scheduled cancellation retains access until the current period ends.
+
+Authorization does not consume resource capacity: an eligible account can continue using existing cards after a
+downgrade even when it cannot create more cards. Deleted, inactive, canceled, replacing, or unknown cards and
+cards whose wallet belongs to a different account are declined. Signed requests with malformed authorization
+data or lookup failures receive HTTP 200 with `approved: false`, the Stripe version header, and JSON content type.
+Invalid signatures still return HTTP 400. Created/updated events continue recording authorization history,
+including declined authorizations, independently of subscription eligibility.
+
+This uses locally synchronized subscription status; subscription webhook delivery must remain healthy.
+Configure Stripe Issuing timeout/error fallback to decline as well: requests that cannot reach this application
+or exceed Stripe's response deadline cannot be protected by this check alone. See
+[Stripe real-time authorizations](https://docs.stripe.com/issuing/controls/real-time-authorizations).
+
+Related flows currently without a subscription eligibility guard:
+
+- `CreateOutboundTransferUseCase` sends money from an existing wallet. Decide whether withdrawals should remain
+  available after subscription expiry before adding enforcement.
+- `EditCardUseCase` and `EditCardHolderUseCase` allow activation and spending-control changes. The authorization
+  guard now blocks card spending when the subscription is ineligible, but these edits remain available.
+- `SubscriptionRepository.findActiveSubscription` excludes only CANCELED, unlike the strict ACTIVE/TRIALING
+  resource eligibility query. Keep that distinction in mind for subscription display and purchase/recovery flows.
