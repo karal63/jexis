@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+source "$(dirname "$0")/common.sh"
+load_environment "${1:-}"
+require_docker
+compose logs --follow --tail=100

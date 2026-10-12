@@ -8,7 +8,7 @@ build/
 TODO.md
 LEARN.md
 application.yml
-application.properties
+/application.properties
 /.env
 
 ### STS ###
@@ -41,3 +41,8 @@ out/
 
 ### VS Code ###
 .vscode/
+
+.env.*
+!.env.*.example
+backups/
+__pycache__/

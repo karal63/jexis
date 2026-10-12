@@ -22,6 +22,9 @@ dependencies {
 
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     runtimeOnly 'org.postgresql:postgresql'
+    implementation 'org.springframework.boot:spring-boot-starter-flyway'
+    runtimeOnly 'org.flywaydb:flyway-database-postgresql'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
 
@@ -50,5 +53,23 @@ dependencies {
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+    useJUnitPlatform { excludeTags 'postgres' }
+}
+
+tasks.register('migrationTest', Test) {
+    description = 'Verify Flyway on an isolated PostgreSQL database supplied through TEST_DATABASE_URL.'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform { includeTags 'postgres' }
+    doFirst {
+        if (!System.getenv('TEST_DATABASE_URL')) {
+            throw new GradleException('Set TEST_DATABASE_URL, TEST_DATABASE_USERNAME and TEST_DATABASE_PASSWORD for a disposable PostgreSQL database.')
+        }
+    }
+}
+
+
+tasks.named('bootJar') {
+    archiveFileName = 'app.jar'
 }

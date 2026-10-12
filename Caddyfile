@@ -1,3 +1,3 @@
-:80 {
+{$CADDY_ADDRESS} {
     reverse_proxy backend:3000
 }
