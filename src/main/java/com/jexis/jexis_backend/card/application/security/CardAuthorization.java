@@ -40,6 +40,11 @@ public class CardAuthorization {
                 && card.getCardHolder().getAccount().getId().equals(accountId);
     }
 
+    public boolean canRevealDetails(UUID userId, UUID cardId) {
+        Card card = getCardUseCase.execute(cardId);
+        return card.getUser().getId().equals(userId);
+    }
+
     public boolean canCreate(UUID userId, UUID accountId) {
         return hasRoleUseCase.execute(userId, accountId, Role.OWNER)
                 || hasRoleUseCase.execute(userId, accountId, Role.ADMIN);
