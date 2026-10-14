@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+source "$(dirname "$0")/common.sh"
+load_environment "${1:-}"
+require_docker
+compose stop
+printf '%s\n' "Stopped $MODE containers; volumes preserved. Stop local DEV Java with Ctrl+C."

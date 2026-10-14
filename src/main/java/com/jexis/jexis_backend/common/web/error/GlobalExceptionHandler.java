@@ -28,6 +28,17 @@ import tools.jackson.databind.exc.InvalidFormatException;
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    @org.springframework.beans.factory.annotation.Value("${application.errors.include-details:false}")
+    private boolean includeDetails;
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNotFound(Exception ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(404, "NOT_FOUND", "Resource not found"));
+    }
+
     @ExceptionHandler(DomainException.class)
     public ResponseEntity<ErrorResponse> handle(DomainException ex) {
         return ResponseEntity
@@ -36,10 +47,11 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleServerError(RuntimeException ex) {
+    public ResponseEntity<ErrorResponse> handleServerError(Exception ex) {
+        log.error("Unhandled request failure", ex);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .body(new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), "UNKNOWN_ERROR", ex.getMessage()));
+                .body(new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), "UNKNOWN_ERROR", includeDetails ? ex.getMessage() : "Internal server error"));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -92,7 +104,7 @@ public class GlobalExceptionHandler {
                 new ValidationErrorResponse(
                         HttpStatus.BAD_REQUEST.value(),
                         "REQ_BODY_MISSING",
-                        ex.getMessage(),
+                        includeDetails ? ex.getMessage() : "Invalid request body",
                         null
                 ));
     }

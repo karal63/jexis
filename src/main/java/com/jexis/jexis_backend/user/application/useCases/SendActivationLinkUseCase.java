@@ -5,10 +5,14 @@ import com.jexis.jexis_backend.emailService.infrastructure.messaging.EmailTask;
 import com.jexis.jexis_backend.user.domain.entities.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
 
 @Service
 @RequiredArgsConstructor
 public class SendActivationLinkUseCase {
+    @Value("${application.public-api-url}")
+    private String publicApiUrl;
+
     private final EmailProducer emailProducer;
     private final GetUserUseCase getUserUseCase;
 
@@ -21,8 +25,8 @@ public class SendActivationLinkUseCase {
                         
                         Please click the following link to activate your account:
                         
-                        http://localhost:3000/api/user/activate?token=%s
-                        """.formatted(user.getFirstName(), rawToken)
+                        %s/user/activate?token=%s
+                        """.formatted(user.getFirstName(), publicApiUrl.replaceAll("/+$", ""), rawToken)
         ));
 
     }

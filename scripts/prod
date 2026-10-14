@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+source "$(dirname "$0")/common.sh"
+load_environment prod
+require_config
+require_docker
+compose up -d --build --wait --wait-timeout 180
+printf '%s\n' "PROD is ready at $PUBLIC_API_URL"

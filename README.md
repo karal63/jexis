@@ -1,87 +1,108 @@
 # Jexis Backend
 
-Jexis Backend is a robust and scalable Spring Boot application that serves as the core API for the Jexis platform. It manages authentication, user profiles, financial transactions via Stripe, and asynchronous email notifications.
+Spring Boot 4 / Java 17 API with PostgreSQL, RabbitMQ, Stripe and JWT authentication.
+The API keeps its `/api` prefix. Select the environment using the launch scripts.
 
-## 🚀 Features
+| | DEV | PROD |
+|---|---|---|
+| Start | `./scripts/dev` | `./scripts/prod` |
+| Private configuration | `.env.dev` | `.env.prod` |
+| Java | Local Gradle process | Docker image |
+| PostgreSQL / RabbitMQ | Docker | Docker, separate data |
+| Entry point | `http://localhost:3000/api` | `http://localhost/api` or your HTTPS domain |
+| Swagger / SQL logging | Enabled | Disabled |
 
-- **Authentication & Authorization**: Secure JWT-based authentication with access and refresh tokens.
-- **Financial Integration**: Full integration with Stripe for payments, wallets, and card management.
-- **Asynchronous Processing**: Uses RabbitMQ for background tasks like sending emails.
-- **Email Service**: Automated transactional emails (activation links, password resets).
-- **Modular Architecture**: Clean code structure organized by domain logic.
-- **API Documentation**: Interactive documentation powered by Swagger/OpenAPI.
+## First-time setup
 
-## 🛠 Tech Stack
+Install Docker with Compose **2.30+** (or newer major versions). DEV also needs Java
+17 or newer; Gradle's wrapper selects/downloads the Java 17 toolchain. On a fresh
+checkout, copy the templates and fill every `CHANGE_ME` value:
 
-- **Framework**: Spring Boot 4.0.5
-- **Language**: Java 17
-- **Database**: PostgreSQL
-- **Messaging**: RabbitMQ
-- **Security**: Spring Security, JWT (JJWT)
-- **Integrations**: Stripe API
-- **Documentation**: Springdoc-OpenAPI
-- **Build Tool**: Gradle
+```bash
+cp .env.dev.example .env.dev
+cp .env.prod.example .env.prod
+chmod 600 .env.dev .env.prod
+```
 
-## 📋 Prerequisites
+Existing local `.env` values were copied into `.env.dev` during this change; the
+original file was preserved. Neither launch mode reads the legacy `.env` anymore.
+If you have existing database data, follow [the adoption guide](docs/environments.md#preserving-an-existing-database)
+**before starting the new DEV stack**. A new Compose project uses a new volume;
+it does not automatically contain your old records.
 
-Before you begin, ensure you have the following installed:
-- **Java 17** or higher
-- **Docker** and **Docker Compose**
-- **PostgreSQL** (if not running via Docker)
-- **Postman** (for API testing)
+Use literal `KEY=value` lines, without wrapping quotes, `export`, substitutions,
+inline comments, or multiline values. `$`, `#`, backslashes and spaces inside a
+value are literal. `${...}` is unsupported. Put comments on their own lines.
+Never `source` an environment file: the scripts safely parse and export its values.
+The selected file takes precedence over same-named shell variables. Scripts select
+the Spring profile; do not put Spring profile settings into the environment files.
 
-## ⚙️ Setup & Installation
+The files contain database, RabbitMQ, JWT, Stripe, SMTP and URL settings. Keep them
+private. Both Git and the Docker build context exclude actual environment files.
+Use independent credentials for DEV and PROD. JWT secrets must be at least 32 bytes.
+PROD mode can use Stripe test credentials for a local rehearsal.
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/your-username/jexis-backend.git
-   cd jexis-backend
-   ```
+## Daily use
 
-2. **Configure Environment:**
-   Edit `src/main/resources/application.properties` to set your local environment variables:
-   - Database credentials
-   - JWT secrets
-   - Stripe API keys and webhook secrets
-   - Mail server credentials
+```bash
+./scripts/dev             # Infrastructure, then foreground Java on port 3000
+./scripts/prod            # Build and start the entire stack, wait for readiness
+./scripts/logs prod       # Follow container logs (DEV Java logs are in its terminal)
+./scripts/stop dev        # Stop containers, retain data; Ctrl+C stops local Java
+./scripts/stop prod       # Stop all PROD containers, retain data
+```
 
-3. **Start Infrastructure + Backend + Caddy:**
-   Use Docker Compose to start PostgreSQL, RabbitMQ, backend API, and Caddy:
-   ```bash
-   docker-compose up -d
-   ```
+DEV exposes PostgreSQL on `127.0.0.1:5434`, RabbitMQ on `127.0.0.1:5672`, and its
+management UI on `http://localhost:15672`. Swagger is at
+`http://localhost:3000/api/swagger-ui/index.html`.
 
-4. **Access the Application:**
-   - API via Caddy: `http://localhost/api`
-   - Swagger UI via Caddy: `http://localhost/api/swagger-ui/index.html`
-   - Direct backend (inside compose published port not required): `backend:3000`
+PROD only publishes Caddy's ports 80/443. Caddy forwards to the backend's internal
+port 3000; the backend connects to `postgres:5432` and `rabbitmq:5672` over its
+private Docker network. Do not put localhost database URLs into `.env.prod`.
+DEV and PROD use `jexis-dev` and `jexis-prod` project names and separate persistent
+PostgreSQL/RabbitMQ volumes. The old default Compose file is intentionally disabled.
 
-## 📖 API Documentation
+The readiness endpoint is `/api/actuator/health`. It returns only health status,
+checks PostgreSQL and RabbitMQ, and does not require authentication. The older
+`/api/health` route is unchanged and is not used for container readiness.
 
-Once the application is running, you can access the interactive Swagger UI at:
-[http://localhost:3000/api/swagger-ui/index.html](http://localhost:3000/api/swagger-ui/index.html)
+## Server deployment
 
-A Postman collection is also available for testing:
-[Postman Collection](postman-collection.json)
+On a Docker-capable Linux server, copy/clone this repository, create `.env.prod`,
+and set `CADDY_ADDRESS=api.example.com`, `PUBLIC_API_URL=https://api.example.com/api`,
+and `APP_ORIGIN=https://app.example.com`. Point the domain at the server and allow
+inbound ports 80 and 443. Then run:
 
-## 🏗 Project Structure
+```bash
+./scripts/prod
+```
 
-The project follows a modular structure:
-- `auth`: Authentication and login logic.
-- `user`: User management and profile handling.
-- `wallet`: Financial wallet operations.
-- `card`: Card issuance and management.
-- `emailService`: Asynchronous email delivery system.
+Caddy obtains and renews HTTPS certificates. For a local production rehearsal, keep
+`CADDY_ADDRESS=http://localhost` and `PUBLIC_API_URL=http://localhost/api`.
+`APP_ORIGIN` is the frontend URL; the frontend is not included in this repository.
+Activation emails use `PUBLIC_API_URL`, password-reset emails use `APP_ORIGIN`.
 
-## 🤝 Contributing
+Containers restart when Docker restarts; enable the Docker service at server boot.
+After updating source, rerun `./scripts/prod` to rebuild. Startup is not an atomic
+or zero-downtime deployment. Back up before schema changes and follow the
+[operations and migration guide](docs/environments.md).
 
-Contributions are welcome! Please follow these steps:
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+## Verification
 
-## 📄 License
+```bash
+./gradlew test bootJar
+python3 -m unittest discover -s tests
+```
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Unit/context tests use isolated test settings and H2, without personal credentials
+or running services. PostgreSQL migration tests require a disposable PostgreSQL
+database and create/drop only uniquely named test schemas:
+
+```bash
+TEST_DATABASE_URL=jdbc:postgresql://localhost:5434/migration_tests \
+TEST_DATABASE_USERNAME=jexis TEST_DATABASE_PASSWORD=your-test-password \
+./gradlew migrationTest
+```
+
+Run this check against PostgreSQL 17 (the Docker version) before deployment. See the
+operations guide for schema export, adoption, backups and deployment smoke checks.

@@ -5,3 +5,7 @@ build
 out
 *.iml
 .DS_Store
+
+.env
+.env.*
+backups

@@ -10,6 +10,7 @@ import com.jexis.jexis_backend.user.domain.entities.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
@@ -19,6 +20,9 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class CreatePasswordResetTokenUseCase {
+    @Value("${application.origin}")
+    private String applicationOrigin;
+
     private final SecureRandom RANDOM = new SecureRandom();
     private final Argon2PasswordEncoder argon = new Argon2PasswordEncoder(16, 32, 1, 60000, 10);
     private final PasswordResetTokenRepository repo;
@@ -57,11 +61,11 @@ public class CreatePasswordResetTokenUseCase {
 
                     Click this link below to reset your password:
 
-                    http://localhost:3000/reset-password?token=%s
+                    %s/reset-password?token=%s
 
                     This link expires in 30 minutes.
 
-                    If you didn't request this, ignore this email.""".formatted(user.get().getFirstName(), token)
+                    If you didn't request this, ignore this email.""".formatted(user.get().getFirstName(), applicationOrigin.replaceAll("/+$", ""), token)
             ));
         }
 
