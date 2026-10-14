@@ -163,11 +163,15 @@ public class CardController {
         return ResponseEntity.ok("Test payment created");
     }
 
+    @PostMapping("/cards/{localCardId}/display-session")
+    @PreAuthorize("@cardAuthorization.canRevealDetails(authentication.principal.id(), #localCardId)")
+    public CardDisplaySessionResponseDto createDisplaySession(@PathVariable UUID localCardId) {
+        Card card = getCardUseCase.execute(localCardId);
+        return new CardDisplaySessionResponseDto(card.getStripeCardId());
+    }
+
     @PostMapping("/cards/{id}/ephemeral-key")
-    @PreAuthorize("""
-            @userAuthorization.isAdmin(authentication.principal.roles())
-            or @cardAuthorization.canView(authentication.principal.id(), #id)
-            """)
+    @PreAuthorize("@cardAuthorization.canRevealDetails(authentication.principal.id(), #id)")
     public EphemeralKeyResponseDto getEphemeralKey(
             @PathVariable UUID id,
             @Valid @RequestBody CreateEphemeralKeyDto createEphemeralKeyDto
