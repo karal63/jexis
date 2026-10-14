@@ -3,7 +3,7 @@ package com.jexis.jexis_backend.card.presentation;
 import java.util.List;
 import java.util.UUID;
 
-import com.jexis.jexis_backend.card.application.dto.TestCardPaymentDto;
+import com.jexis.jexis_backend.card.application.dto.*;
 import com.jexis.jexis_backend.card.application.useCases.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -18,12 +18,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.jexis.jexis_backend.card.application.dto.CardPageResponseDto;
-import com.jexis.jexis_backend.card.application.dto.CardPageAdminResponseDto;
-import com.jexis.jexis_backend.card.application.dto.CardResponseDto;
-import com.jexis.jexis_backend.card.application.dto.CreateCardDto;
-import com.jexis.jexis_backend.card.application.dto.EditCardDto;
-import com.jexis.jexis_backend.card.application.dto.ReplaceCardDto;
 import com.jexis.jexis_backend.card.domain.entities.Card;
 import com.jexis.jexis_backend.card.domain.enums.CardStatus;
 import com.jexis.jexis_backend.common.dtoHelpers.DtoHelper;
@@ -55,6 +49,7 @@ public class CardController {
     private final DtoHelper dtoHelper;
     private final GetWalletCardsUseCase getWalletCardsUseCase;
     private final TestCardPaymentUseCase testCardPaymentUseCase;
+    private final GetEphemeralKeyUseCase getEphemeralKeyUseCase;
 
     @PreAuthorize("@userAuthorization.isAdmin(authentication.principal.roles())")
     @GetMapping("/admin/cards")
@@ -166,6 +161,18 @@ public class CardController {
     public ResponseEntity<String> createTestPayment(@Valid @RequestBody TestCardPaymentDto body) {
         testCardPaymentUseCase.execute(body);
         return ResponseEntity.ok("Test payment created");
+    }
+
+    @PostMapping("/cards/{id}/ephemeral-key")
+    @PreAuthorize("""
+            @userAuthorization.isAdmin(authentication.principal.roles())
+            or @cardAuthorization.canView(authentication.principal.id(), #id)
+            """)
+    public EphemeralKeyResponseDto getEphemeralKey(
+            @PathVariable UUID id,
+            @Valid @RequestBody CreateEphemeralKeyDto createEphemeralKeyDto
+    ) {
+        return new EphemeralKeyResponseDto(getEphemeralKeyUseCase.execute(id, createEphemeralKeyDto));
     }
 
     private CardPageResponseDto mapToPageResponse(Page<Card> cardsPage, int page, int pageSize) {
