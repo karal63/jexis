@@ -16,6 +16,9 @@ import com.stripe.model.AccountLink;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -35,10 +38,15 @@ class CreateAccountBootstrapTest {
     @Mock com.jexis.jexis_backend.subscription.application.useCases.CreateFreeSubscriptionUseCase freeSubscription;
     @InjectMocks CreateAccountUseCase create;
 
-    @Test void rejectsUnverifiedOwnersBeforeCreatingAnything() {
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(booleans = false)
+    void rejectsUnverifiedOwnersBeforeCreatingAnything(Boolean activated) {
         UUID userId = UUID.randomUUID();
-        when(users.execute(userId)).thenReturn(new User());
-        assertThatThrownBy(() -> create.execute(new AuthUser(userId, "Test", "test@example.com", false, List.of())))
+        User owner = new User();
+        owner.setIsActivated(activated);
+        when(users.execute(userId)).thenReturn(owner);
+        assertThatThrownBy(() -> create.execute(new AuthUser(userId, "Test", "test@example.com", true, List.of())))
                 .isInstanceOf(com.jexis.jexis_backend.user.domain.exceptions.UserNotActivatedException.class);
         verifyNoInteractions(accounts, connect, links, members, freeSubscription);
     }

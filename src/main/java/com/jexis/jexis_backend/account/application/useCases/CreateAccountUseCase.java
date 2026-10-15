@@ -53,7 +53,9 @@ public class CreateAccountUseCase {
     public AccountResponseDto execute(AuthUser authUser) {
         User user = getUserUseCase.execute(authUser.id());
 
-        if (!user.getIsActivated()) throw new UserNotActivatedException();
+        if (!Boolean.TRUE.equals(user.getIsActivated())) {
+            throw new UserNotActivatedException();
+        }
 
         com.stripe.model.Account connectAccount = createConnectUseCase.execute(user.getEmail());
         AccountLink link = createLinkUseCase.execute(connectAccount.getId(), AccountLinkCreateParams.Type.ACCOUNT_ONBOARDING);
