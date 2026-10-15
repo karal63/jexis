@@ -1,5 +1,6 @@
 package com.jexis.jexis_backend.plan.application.useCases;
 
+import com.jexis.jexis_backend.plan.domain.exceptions.ProtectedFreePlanException;
 import com.jexis.jexis_backend.stripe.application.useCases.plan.product.CreateStripeProductUseCase;
 import com.jexis.jexis_backend.plan.domain.enums.PlanStatus;
 import com.stripe.model.Product;
@@ -20,6 +21,9 @@ public class CreatePlanUseCase {
 
     @Transactional
     public Plan execute(CreatePlanDto dto) {
+        if (Plan.FREE_CODE.equals(dto.getCode())) {
+            throw new ProtectedFreePlanException();
+        }
         Product stripeProduct = createStripeProductUseCase.execute(dto);
         Plan plan = new Plan(
                 stripeProduct.getId(),

@@ -20,11 +20,18 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class Plan {
+    public static final String FREE_CODE = "free";
+
+    @JsonIgnore
+    public boolean isFreePlan() {
+        return FREE_CODE.equals(code);
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private String stripePlanId;
 
     @Column(nullable = false)

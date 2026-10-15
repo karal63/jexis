@@ -1,5 +1,7 @@
 package com.jexis.jexis_backend.plan.application.useCases;
 
+import com.jexis.jexis_backend.plan.domain.exceptions.ProtectedFreePlanException;
+import com.jexis.jexis_backend.subscription.domain.exceptions.LocalSubscriptionOperationException;
 import com.jexis.jexis_backend.plan.application.dto.SetDefaultPriceDto;
 import com.jexis.jexis_backend.plan.domain.entities.Plan;
 import com.jexis.jexis_backend.plan.domain.entities.Price;
@@ -22,6 +24,12 @@ public class SetDefaultPriceUseCase {
     @Transactional
     public void execute(UUID planId, SetDefaultPriceDto dto) {
         Plan plan = getPlanUseCase.execute(planId);
+        if (plan.isFreePlan()) {
+            throw new ProtectedFreePlanException();
+        }
+        if (plan.getStripePlanId() == null) {
+            throw new LocalSubscriptionOperationException();
+        }
         Price price = getPlanPriceUseCase.execute(dto.priceId());
         plan.setDefaultPrice(price);
         planRepository.save(plan);

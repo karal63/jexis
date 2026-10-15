@@ -18,7 +18,7 @@ import com.jexis.jexis_backend.subscription.domain.entities.Subscription;
 public interface SubscriptionRepository extends JpaRepository<Subscription, UUID> {
     @Query("""
             select s from Subscription s where s.account.id = :accountId
-              and s.currentPeriodStart <= :now and s.currentPeriodEnd > :now
+              and s.currentPeriodStart <= :now and (s.currentPeriodEnd is null or s.currentPeriodEnd > :now)
               and s.status in :statuses
             order by s.currentPeriodStart desc, s.id desc
             """)
@@ -27,6 +27,8 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, UUID
             @Param("now") LocalDateTime now,
             @Param("statuses")
             List<SubscriptionStatus> statuses);
+    List<Subscription> findByAccountIdAndStripeSubscriptionIdIsNullAndStatus(UUID accountId, SubscriptionStatus status);
+
     Optional<Subscription> findByStripeSubscriptionId(String stripeSubscriptionId);
 
     Page<Subscription> findByUserId(UUID userId, Pageable pageable);
@@ -36,8 +38,8 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, UUID
                 FROM Subscription s
                 WHERE s.account.id = :accountId
                   AND s.currentPeriodStart <= :now
-                  AND s.currentPeriodEnd > :now
-                  AND s.status != SubscriptionStatus.CANCELED
+                  AND (s.currentPeriodEnd is null or s.currentPeriodEnd > :now)
+                  AND s.status NOT IN (SubscriptionStatus.CANCELED, SubscriptionStatus.INCOMPLETE, SubscriptionStatus.INCOMPLETE_EXPIRED)
             """)
     Optional<Subscription> findActiveSubscription(
             UUID accountId,

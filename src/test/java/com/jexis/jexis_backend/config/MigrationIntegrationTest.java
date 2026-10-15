@@ -62,12 +62,12 @@ class MigrationIntegrationTest {
 
     @Test
     void freshDatabaseMigratesValidatesAndPreservesDataOnRestart() {
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(1);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(2);
         validateEntities();
         UUID userId = insertUserAndAccount();
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM accounts WHERE owner_id = ?", Integer.class, userId)).isEqualTo(1);
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM flyway_schema_history WHERE success", Integer.class)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM flyway_schema_history WHERE success", Integer.class)).isEqualTo(2);
     }
 
     @Test
@@ -75,10 +75,30 @@ class MigrationIntegrationTest {
         new ResourceDatabasePopulator(new ClassPathResource("db/migration/V1__initial_schema.sql")).execute(dataSource);
         UUID userId = insertUserAndAccount();
         assertThatThrownBy(() -> flyway.migrate()).hasMessageContaining("non-empty schema");
-        validateEntities();
         flyway.baseline();
-        assertThat(flyway.migrate().migrationsExecuted).isZero();
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(1);
+        validateEntities();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM accounts WHERE owner_id = ?", Integer.class, userId)).isEqualTo(1);
+    }
+
+    @Test
+    void freePlanSupportsLocalSubscriptionsAndPreventsDuplicateActiveProvisioning() {
+        flyway.migrate();
+        UUID userId = insertUserAndAccount();
+        UUID accountId = jdbc.queryForObject("SELECT id FROM accounts WHERE owner_id = ?", UUID.class, userId);
+        UUID planId = jdbc.queryForObject("SELECT id FROM plans WHERE code = 'free'", UUID.class);
+        UUID priceId = jdbc.queryForObject("SELECT default_price_id FROM plans WHERE id = ?", UUID.class, planId);
+        assertThat(jdbc.queryForObject("SELECT unit_amount FROM prices WHERE id = ?", Long.class, priceId)).isZero();
+        String insert = """
+                INSERT INTO subscriptions (id, user_id, account_id, plan_id, price_id, status,
+                    current_period_start, created_at, cancel_at_period_end)
+                VALUES (?, ?, ?, ?, ?, 'ACTIVE', now(), now(), false)
+                """;
+        jdbc.update(insert, UUID.randomUUID(), userId, accountId, planId, priceId);
+        assertThatThrownBy(() -> jdbc.update(insert, UUID.randomUUID(), userId, accountId, planId, priceId))
+                .isInstanceOf(org.springframework.dao.DuplicateKeyException.class);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM subscriptions WHERE stripe_subscription_id IS NULL AND current_period_end IS NULL", Integer.class))
+                .isEqualTo(1);
     }
 
     @Test

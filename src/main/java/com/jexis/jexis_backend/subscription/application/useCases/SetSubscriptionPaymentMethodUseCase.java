@@ -1,5 +1,6 @@
 package com.jexis.jexis_backend.subscription.application.useCases;
 
+import com.jexis.jexis_backend.subscription.domain.exceptions.LocalSubscriptionOperationException;
 import com.jexis.jexis_backend.stripe.application.useCases.subscription.SetStripeSubscriptionPaymentMethodUseCase;
 import com.jexis.jexis_backend.subscription.application.dto.SetSubscriptionPaymentMethodDto;
 import com.jexis.jexis_backend.subscription.domain.entities.Subscription;
@@ -25,6 +26,9 @@ public class SetSubscriptionPaymentMethodUseCase {
 
     public void execute(UUID subscriptionId, SetSubscriptionPaymentMethodDto dto, UUID userId) {
         Subscription subscription = getSubscriptionUseCase.execute(subscriptionId);
+        if (subscription.getStripeSubscriptionId() == null) {
+            throw new LocalSubscriptionOperationException();
+        }
         User user = getUserUseCase.execute(userId);
 
         PaymentMethod paymentMethod = getPaymentMethodUseCase.execute(user.getStripeCustomerId(), dto.paymentMethodId());

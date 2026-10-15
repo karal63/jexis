@@ -32,9 +32,18 @@ class CreateAccountBootstrapTest {
     @Mock DtoHelper dto;
     @Mock MemberRepository members;
     @Mock GetUserUseCase users;
+    @Mock com.jexis.jexis_backend.subscription.application.useCases.CreateFreeSubscriptionUseCase freeSubscription;
     @InjectMocks CreateAccountUseCase create;
 
-    @Test void createsInitialOwnerWithoutSubscription() {
+    @Test void rejectsUnverifiedOwnersBeforeCreatingAnything() {
+        UUID userId = UUID.randomUUID();
+        when(users.execute(userId)).thenReturn(new User());
+        assertThatThrownBy(() -> create.execute(new AuthUser(userId, "Test", "test@example.com", false, List.of())))
+                .isInstanceOf(com.jexis.jexis_backend.user.domain.exceptions.UserNotActivatedException.class);
+        verifyNoInteractions(accounts, connect, links, members, freeSubscription);
+    }
+
+    @Test void createsInitialOwnerAndFreeSubscription() {
         UUID userId = UUID.randomUUID();
         User owner = new User(); owner.setId(userId); owner.setEmail("test@example.com"); owner.setIsActivated(true);
         when(users.execute(userId)).thenReturn(owner);
@@ -48,6 +57,7 @@ class CreateAccountBootstrapTest {
         create.execute(new AuthUser(userId, "Test", owner.getEmail(), true, List.of()));
         ArgumentCaptor<Member> member = ArgumentCaptor.forClass(Member.class);
         verify(members).save(member.capture());
+        verify(freeSubscription).execute(member.getValue().getAccount());
         assertThat(member.getValue().getRole()).isEqualTo(Role.OWNER);
         assertThat(member.getValue().getUser()).isSameAs(owner);
         assertThat(member.getValue().getAccount().getOwner()).isSameAs(owner);

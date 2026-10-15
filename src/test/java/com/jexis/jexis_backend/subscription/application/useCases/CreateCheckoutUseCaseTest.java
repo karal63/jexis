@@ -24,8 +24,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 class CreateCheckoutUseCaseTest {
-    @Test
-    void createsCheckoutWhenRepositoryHasNoActiveSubscription() {
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(booleans = {false, true})
+    void createsCheckoutWithNoSubscriptionOrLocalFreeSubscription(boolean hasFreeSubscription) {
         SubscriptionRepository repository = mock(SubscriptionRepository.class);
         CreateStripeCheckoutUseCase stripeCheckout = mock(CreateStripeCheckoutUseCase.class);
         GetPlanUseCase getPlan = mock(GetPlanUseCase.class);
@@ -54,8 +55,9 @@ class CreateCheckoutUseCaseTest {
 
         when(getPlan.execute(plan.getId())).thenReturn(plan);
         when(getAccount.execute(account.getId())).thenReturn(account);
+        var free = new com.jexis.jexis_backend.subscription.domain.entities.Subscription();
         when(repository.findActiveSubscription(eq(account.getId()), any(LocalDateTime.class)))
-                .thenReturn(Optional.empty());
+                .thenReturn(hasFreeSubscription ? Optional.of(free) : Optional.empty());
         when(getUser.execute(userId)).thenReturn(user);
         when(stripeCheckout.execute(plan.getId(), "price_test", userId, account.getId(), "cus_test"))
                 .thenReturn("https://checkout.stripe.com/test");

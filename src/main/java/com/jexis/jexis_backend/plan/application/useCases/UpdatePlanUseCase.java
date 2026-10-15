@@ -1,5 +1,6 @@
 package com.jexis.jexis_backend.plan.application.useCases;
 
+import com.jexis.jexis_backend.plan.domain.exceptions.ProtectedFreePlanException;
 import com.jexis.jexis_backend.plan.application.dto.UpdatePlanDto;
 import com.jexis.jexis_backend.plan.domain.entities.Plan;
 import com.jexis.jexis_backend.plan.infrastructure.PlanRepository;
@@ -22,6 +23,11 @@ public class UpdatePlanUseCase {
         boolean changed = false;
         Plan plan = getPlanUseCase.execute(id);
 
+        if (dto.getCode() != null && !dto.getCode().equals(plan.getCode())
+                && (plan.isFreePlan() || Plan.FREE_CODE.equals(dto.getCode()))) {
+            throw new ProtectedFreePlanException();
+        }
+
         if (dto.getName() != null) {
             plan.setName(dto.getName());
             changed = true;
@@ -37,7 +43,7 @@ public class UpdatePlanUseCase {
             changed = true;
         }
 
-        if (changed) {
+        if (changed && plan.getStripePlanId() != null) {
             updateStripeProductUseCase.execute(plan.getStripePlanId(), dto);
         }
 
