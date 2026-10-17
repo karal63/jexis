@@ -15,6 +15,8 @@ public record TransactionAdminResponseDto(
         String type,
         Long amount,
         String currency,
+        Long merchantAmount,
+        String merchantCurrency,
         String status,
         String direction,
         String bankName,

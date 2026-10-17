@@ -23,6 +23,8 @@ public record TransactionResponseDto(
         TransactionType type,
         Long amount,
         String currency,
+        Long merchantAmount,
+        String merchantCurrency,
         TransactionStatus status,
         TransactionDirection direction,
         String bankName,

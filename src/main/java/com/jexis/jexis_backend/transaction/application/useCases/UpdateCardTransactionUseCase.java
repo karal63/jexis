@@ -31,6 +31,11 @@ public class UpdateCardTransactionUseCase {
 
             transaction.get().setAmount(issuingTransaction.getAmount());
             transaction.get().setCurrency(issuingTransaction.getCurrency());
+            // Older or incomplete events must not erase an already known merchant amount.
+            if (issuingTransaction.getMerchantAmount() != null && issuingTransaction.getMerchantCurrency() != null) {
+                transaction.get().setMerchantAmount(issuingTransaction.getMerchantAmount());
+                transaction.get().setMerchantCurrency(issuingTransaction.getMerchantCurrency());
+            }
             transaction.get().setMerchantName(issuingTransaction.getMerchantData().getName());
             transaction.get().setMerchantCategory(issuingTransaction.getMerchantData().getCategory());
             transaction.get().setMerchantCountry(issuingTransaction.getMerchantData().getCountry());

@@ -97,6 +97,17 @@ public class Transaction {
     private LocalDateTime expectedArrivalDate;
 
     // card payments
+    /** Original signed amount in merchantCurrency minor units, as reported by Stripe. */
+    @Getter
+    @Setter
+    @Column
+    private Long merchantAmount;
+
+    @Getter
+    @Setter
+    @Column(length = 3)
+    private String merchantCurrency;
+
     @Getter
     @Setter
     @ManyToOne

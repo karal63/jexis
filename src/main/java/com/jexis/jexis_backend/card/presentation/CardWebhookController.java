@@ -53,6 +53,8 @@ public class CardWebhookController {
                         TransactionType.CARD_TRANSACTION,
                         transaction.getAmount(),
                         transaction.getCurrency(),
+                        transaction.getMerchantAmount(),
+                        transaction.getMerchantCurrency(),
                         TransactionStatus.COMPLETED,
                         TransactionDirection.DEBIT,
                         transaction.getCard(),

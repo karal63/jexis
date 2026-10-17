@@ -11,6 +11,8 @@ public record CreateCardTransactionDto(
         TransactionType type,
         Long amount,
         String currency,
+        Long merchantAmount,
+        String merchantCurrency,
         TransactionStatus status,
         TransactionDirection direction,
         String cardId,
