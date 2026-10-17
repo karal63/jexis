@@ -63,7 +63,7 @@ public class UpdateAuthorizationUseCase {
         }
 
         if (hasChanges) {
-            syncBalanceUseCase.execute(authorization.getWallet().getStripeFinancialAccountId(), authorization.getWallet().getStripeFinancialAccountId());
+            syncBalanceUseCase.execute(authorization.getWallet().getAccount().getConnectAccountId(), authorization.getWallet().getStripeFinancialAccountId());
             authorizationRepository.save(authorization);
         }
     }

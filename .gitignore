@@ -10,6 +10,8 @@ LEARN.md
 application.yml
 /application.properties
 /.env
+.postman
+postman
 
 ### STS ###
 .apt_generated
