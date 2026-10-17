@@ -1,5 +1,7 @@
 package com.jexis.jexis_backend.subscription.application.useCases;
 
+import org.springframework.transaction.annotation.Transactional;
+import com.jexis.jexis_backend.subscription.domain.enums.SubscriptionStatus;
 import com.jexis.jexis_backend.account.application.useCases.GetAccountUseCase;
 import com.jexis.jexis_backend.account.domain.entities.Account;
 import com.jexis.jexis_backend.plan.application.useCases.GetPlanByStripeIdUseCase;
@@ -35,6 +37,7 @@ public class SyncSubscriptionUseCase {
     private final GetPlanByStripeIdUseCase getPlanByStripeIdUseCase;
     private final StripeClient client;
 
+    @Transactional
     public Subscription execute(com.stripe.model.Subscription stripeSub) {
         entityManager.createNativeQuery(
                         "SELECT pg_advisory_xact_lock(hashtext(?1))")
@@ -111,6 +114,17 @@ public class SyncSubscriptionUseCase {
             subscription.setScheduledPlan(null);
         }
 
+        // Keep free access until Stripe confirms that the paid subscription is usable.
+        if (subscription.getStatus() == SubscriptionStatus.ACTIVE
+                || subscription.getStatus() == SubscriptionStatus.TRIALING) {
+            for (Subscription local : subscriptionRepository.findByAccountIdAndStripeSubscriptionIdIsNullAndStatus(
+                    account.getId(), SubscriptionStatus.ACTIVE)) {
+                local.setStatus(SubscriptionStatus.CANCELED);
+                local.setCanceledAt(LocalDateTime.now(ZoneOffset.UTC));
+                local.setCurrentPeriodEnd(local.getCanceledAt());
+                subscriptionRepository.save(local);
+            }
+        }
         return subscriptionRepository.save(subscription);
     }
 }

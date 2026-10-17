@@ -11,6 +11,8 @@ import com.jexis.jexis_backend.plan.domain.entities.Plan;
 
 @Repository
 public interface PlanRepository extends JpaRepository<Plan, UUID> {
+    Optional<Plan> findByCode(String code);
+
     List<Plan> findAllByStatusAndActiveTrue(PlanStatus status);
     Optional<Plan> findByIdAndStatusAndActiveTrue(UUID id, PlanStatus status);
     Optional<Plan> findByStripePlanId(String stripePlanId);

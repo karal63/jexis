@@ -1,5 +1,6 @@
 package com.jexis.jexis_backend.subscription.application.useCases;
 
+import com.jexis.jexis_backend.subscription.domain.exceptions.LocalSubscriptionOperationException;
 import com.jexis.jexis_backend.account.application.useCases.GetAccountUseCase;
 import com.jexis.jexis_backend.account.domain.entities.Account;
 import com.jexis.jexis_backend.plan.application.useCases.GetPlanUseCase;
@@ -39,10 +40,13 @@ public class CreateSubscriptionUseCase {
             throw new PlanNotPublishedException();
         }
 
+        if (plan.isFreePlan() || plan.getDefaultPrice().getStripePriceId() == null) {
+            throw new LocalSubscriptionOperationException();
+        }
         Subscription activeSubscription = getActiveAccountSubscriptionUseCase.execute(account.getId());
 
         // check if account has active subscription with the same plan
-        if (activeSubscription != null) {
+        if (activeSubscription != null && activeSubscription.getStripeSubscriptionId() != null) {
             handleExistingSubscriptionUseCase.execute(activeSubscription, plan);
         } else {
             PaymentMethod paymentMethod = getPaymentMethodUseCase.execute(user.getStripeCustomerId(), dto.getPaymentMethodId());

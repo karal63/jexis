@@ -48,7 +48,7 @@ public class Subscription {
     @JoinColumn(name = "price_id", nullable = false)
     private Price price;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private String stripeSubscriptionId;
 
     private String stripePaymentMethodId;
@@ -60,7 +60,7 @@ public class Subscription {
     @Column(nullable = false)
     private LocalDateTime currentPeriodStart;
 
-    @Column(nullable = false)
+    // Null means a local subscription has no expiration.
     private LocalDateTime currentPeriodEnd;
 
     @Column(nullable = false)

@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 @Service
@@ -16,7 +17,7 @@ public class GetActiveAccountSubscriptionUseCase {
     public Subscription execute(UUID accountId) {
         return subscriptionRepository.findActiveSubscription(
                 accountId,
-                LocalDateTime.now()
+                LocalDateTime.now(ZoneOffset.UTC)
         ).orElse(null);
     }
 }

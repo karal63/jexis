@@ -147,6 +147,17 @@ class ResourceLimitsDatabaseTest {
             em.persist(new PlanEntitlement(plan, em.find(Entitlement.class, memberEntitlementId), "2"));
         });
     }
+    @Test void localSubscriptionWithoutExpirationRemainsEligible() {
+        tx.executeWithoutResult(s -> {
+            Subscription subscription = em.find(Subscription.class, subscriptionId);
+            subscription.setStripeSubscriptionId(null);
+            subscription.setCurrentPeriodEnd(null);
+        });
+        assertThat(subscriptions.findActiveSubscription(accountId, LocalDateTime.now().plusYears(100)))
+                .isPresent();
+        assertThat(checker.execute(accountId, AccountResource.MEMBERS, 1).allowed()).isTrue();
+    }
+
     @Test void cardholdersUsePlanMemberLimitAndExcludeDeletedAndOtherAccounts() {
         tx.executeWithoutResult(s -> {
             Account account = em.find(Account.class, accountId);

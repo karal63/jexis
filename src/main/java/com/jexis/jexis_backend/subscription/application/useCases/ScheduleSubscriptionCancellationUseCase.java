@@ -1,5 +1,6 @@
 package com.jexis.jexis_backend.subscription.application.useCases;
 
+import com.jexis.jexis_backend.subscription.domain.exceptions.LocalSubscriptionOperationException;
 import com.jexis.jexis_backend.stripe.application.useCases.subscription.CancelStripeSubscriptionUseCase;
 import com.jexis.jexis_backend.subscription.domain.entities.Subscription;
 import com.jexis.jexis_backend.subscription.infrastructure.SubscriptionRepository;
@@ -15,6 +16,9 @@ public class ScheduleSubscriptionCancellationUseCase {
 
     public void execute(java.util.UUID subscriptionId) {
         Subscription subscription = getSubscriptionUseCase.execute(subscriptionId);
+        if (subscription.getStripeSubscriptionId() == null) {
+            throw new LocalSubscriptionOperationException();
+        }
 
         cancelStripeSubscriptionUseCase.execute(subscription.getStripeSubscriptionId());
 

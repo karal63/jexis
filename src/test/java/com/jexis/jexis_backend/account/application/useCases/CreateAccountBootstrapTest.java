@@ -16,6 +16,9 @@ import com.stripe.model.AccountLink;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -32,9 +35,23 @@ class CreateAccountBootstrapTest {
     @Mock DtoHelper dto;
     @Mock MemberRepository members;
     @Mock GetUserUseCase users;
+    @Mock com.jexis.jexis_backend.subscription.application.useCases.CreateFreeSubscriptionUseCase freeSubscription;
     @InjectMocks CreateAccountUseCase create;
 
-    @Test void createsInitialOwnerWithoutSubscription() {
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(booleans = false)
+    void rejectsUnverifiedOwnersBeforeCreatingAnything(Boolean activated) {
+        UUID userId = UUID.randomUUID();
+        User owner = new User();
+        owner.setIsActivated(activated);
+        when(users.execute(userId)).thenReturn(owner);
+        assertThatThrownBy(() -> create.execute(new AuthUser(userId, "Test", "test@example.com", true, List.of())))
+                .isInstanceOf(com.jexis.jexis_backend.user.domain.exceptions.UserNotActivatedException.class);
+        verifyNoInteractions(accounts, connect, links, members, freeSubscription);
+    }
+
+    @Test void createsInitialOwnerAndFreeSubscription() {
         UUID userId = UUID.randomUUID();
         User owner = new User(); owner.setId(userId); owner.setEmail("test@example.com"); owner.setIsActivated(true);
         when(users.execute(userId)).thenReturn(owner);
@@ -48,6 +65,7 @@ class CreateAccountBootstrapTest {
         create.execute(new AuthUser(userId, "Test", owner.getEmail(), true, List.of()));
         ArgumentCaptor<Member> member = ArgumentCaptor.forClass(Member.class);
         verify(members).save(member.capture());
+        verify(freeSubscription).execute(member.getValue().getAccount());
         assertThat(member.getValue().getRole()).isEqualTo(Role.OWNER);
         assertThat(member.getValue().getUser()).isSameAs(owner);
         assertThat(member.getValue().getAccount().getOwner()).isSameAs(owner);

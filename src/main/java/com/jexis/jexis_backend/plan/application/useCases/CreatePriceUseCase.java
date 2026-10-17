@@ -1,5 +1,7 @@
 package com.jexis.jexis_backend.plan.application.useCases;
 
+import com.jexis.jexis_backend.plan.domain.exceptions.ProtectedFreePlanException;
+import com.jexis.jexis_backend.subscription.domain.exceptions.LocalSubscriptionOperationException;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -27,6 +29,12 @@ public class CreatePriceUseCase {
     @Transactional
     public Price execute(UUID planId, CreatePriceDto dto) {
         Plan plan = getPlanUseCase.execute(planId);
+        if (plan.isFreePlan()) {
+            throw new ProtectedFreePlanException();
+        }
+        if (plan.getStripePlanId() == null) {
+            throw new LocalSubscriptionOperationException();
+        }
         com.stripe.model.Price stripePrice = createStripePriceUseCase.execute(plan.getStripePlanId(), dto);
 
         String interval = normalizeInterval(dto.getInterval());

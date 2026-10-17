@@ -1,5 +1,6 @@
 package com.jexis.jexis_backend.account.application.useCases;
 
+import com.jexis.jexis_backend.subscription.application.useCases.CreateFreeSubscriptionUseCase;
 import com.jexis.jexis_backend.auth.application.dto.AuthUser;
 import com.jexis.jexis_backend.user.application.useCases.GetUserUseCase;
 import com.jexis.jexis_backend.user.domain.exceptions.UserNotActivatedException;
@@ -39,6 +40,7 @@ public class CreateAccountUseCase {
     private final DtoHelper dtoHelper;
     private final MemberRepository memberRepository;
     private final GetUserUseCase getUserUseCase;
+    private final CreateFreeSubscriptionUseCase createFreeSubscriptionUseCase;
 
     /**
      * Handles account creation.
@@ -51,7 +53,9 @@ public class CreateAccountUseCase {
     public AccountResponseDto execute(AuthUser authUser) {
         User user = getUserUseCase.execute(authUser.id());
 
-        if (!user.getIsActivated()) throw new UserNotActivatedException();
+        if (!Boolean.TRUE.equals(user.getIsActivated())) {
+            throw new UserNotActivatedException();
+        }
 
         com.stripe.model.Account connectAccount = createConnectUseCase.execute(user.getEmail());
         AccountLink link = createLinkUseCase.execute(connectAccount.getId(), AccountLinkCreateParams.Type.ACCOUNT_ONBOARDING);
@@ -66,6 +70,7 @@ public class CreateAccountUseCase {
         logger.info("ACCOUNT", "Account created successfully: " + saved.getFirstName() + " " + saved.getLastName());
 
         initializeOwner(saved, user);
+        createFreeSubscriptionUseCase.execute(saved);
         logger.info("MEMBER", "Initial member created successfully");
         return dtoHelper.toAccountDto(saved);
     }

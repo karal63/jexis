@@ -1,5 +1,6 @@
 package com.jexis.jexis_backend.plan.application.useCases;
 
+import com.jexis.jexis_backend.plan.domain.exceptions.ProtectedFreePlanException;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,12 +27,16 @@ public class UpdatePriceUseCase {
 
         Price price = getPlanPriceUseCase.execute(id);
 
+        if (price.getPlan() != null && price.getPlan().isFreePlan() && Boolean.FALSE.equals(dto.getActive())) {
+            throw new ProtectedFreePlanException();
+        }
+
         if (dto.getActive() != null) {
             price.setActive(dto.getActive());
             changed = true;
         }
 
-        if (changed) {
+        if (changed && price.getStripePriceId() != null) {
             updateStripePriceUseCase.execute(price.getStripePriceId(), dto);
         }
 

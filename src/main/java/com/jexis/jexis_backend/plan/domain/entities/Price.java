@@ -33,7 +33,7 @@ public class Price {
     @JsonIgnore
     private Plan plan;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private String stripePriceId;
 
     @Column(nullable = false)
