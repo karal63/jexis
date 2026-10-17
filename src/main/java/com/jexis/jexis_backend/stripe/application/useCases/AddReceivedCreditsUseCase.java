@@ -8,6 +8,7 @@ import com.stripe.model.treasury.ReceivedCredit;
 import com.stripe.net.RequestOptions;
 import com.stripe.param.treasury.ReceivedCreditCreateParams;
 import org.springframework.stereotype.Service;
+import com.jexis.jexis_backend.wallet.domain.WalletCurrency;
 
 @Service
 public class AddReceivedCreditsUseCase {
@@ -23,7 +24,7 @@ public class AddReceivedCreditsUseCase {
                     ReceivedCreditCreateParams.builder()
                             .setFinancialAccount(financialAccountId)
                             .setNetwork(getNetwork(body.network()))
-                            .setCurrency(body.currency())
+                            .setCurrency(WalletCurrency.toStripe(body.currency()))
                             .setAmount(body.amount())
                             .build();
 

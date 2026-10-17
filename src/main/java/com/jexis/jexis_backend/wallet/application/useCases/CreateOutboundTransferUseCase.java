@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
+import com.jexis.jexis_backend.wallet.domain.WalletCurrency;
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +21,8 @@ public class CreateOutboundTransferUseCase {
     public void execute(UUID walletId, CreateOutboundTransferDto body) {
         Wallet wallet = getWalletUseCase.execute(walletId);
         ExternalAccount externalAccount = getExternalAccountUseCase.execute(body.externalAccountId());
+        WalletCurrency.requireMatch(wallet.getCurrency(), body.currency());
+        WalletCurrency.requireMatch(wallet.getCurrency(), externalAccount.getCurrency());
         stripeOutboundTransferUseCase.execute(wallet.getAccount().getConnectAccountId(), wallet.getStripeFinancialAccountId(), externalAccount.getStripeExternalAccountId(), body);
     }
 }

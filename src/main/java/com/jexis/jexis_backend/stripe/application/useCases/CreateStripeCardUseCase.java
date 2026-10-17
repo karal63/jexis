@@ -1,6 +1,7 @@
 package com.jexis.jexis_backend.stripe.application.useCases;
 
 import org.springframework.stereotype.Service;
+import com.jexis.jexis_backend.wallet.domain.WalletCurrency;
 
 import com.stripe.StripeClient;
 import com.stripe.model.issuing.Card;
@@ -17,17 +18,18 @@ public class CreateStripeCardUseCase {
         this.client = client;
     }
 
-    public Card execute(String cardholderId, String financialAccountId, String connectedAccountId) {
-        return execute(cardholderId, financialAccountId, connectedAccountId, null, null);
+    public Card execute(String cardholderId, String financialAccountId, String connectedAccountId, String currency) {
+        return execute(cardholderId, financialAccountId, connectedAccountId, currency, null, null);
     }
 
-    public Card execute(String cardholderId, String financialAccountId, String connectedAccountId, String replacementFor,
+    public Card execute(String cardholderId, String financialAccountId, String connectedAccountId, String currency, String replacementFor,
             CardReplacementReason replacementReason) {
-        return execute(cardholderId, financialAccountId, connectedAccountId, replacementFor, replacementReason, null);
+        return execute(cardholderId, financialAccountId, connectedAccountId, currency, replacementFor, replacementReason, null);
     }
 
-    public Card execute(String cardholderId, String financialAccountId, String connectedAccountId, String replacementFor,
+    public Card execute(String cardholderId, String financialAccountId, String connectedAccountId, String currency, String replacementFor,
             CardReplacementReason replacementReason, String idempotencyKey) {
+        String stripeCurrency = WalletCurrency.toStripe(currency);
         try {
             // Recover a prior successful issuance even if its local commit failed.
             // This also avoids relying solely on Stripe's finite idempotency retention.
@@ -47,7 +49,7 @@ public class CreateStripeCardUseCase {
             CardCreateParams.Builder builder = CardCreateParams.builder()
                     .setCardholder(cardholderId)
                     .setFinancialAccount(financialAccountId)
-                    .setCurrency("usd")
+                    .setCurrency(stripeCurrency)
                     .setType(CardCreateParams.Type.VIRTUAL)
                     .setStatus(CardCreateParams.Status.ACTIVE);
 

@@ -92,7 +92,7 @@ public class CreateCardUseCase {
 
         com.stripe.model.issuing.Card stripeCard = createStripeCard.execute(cardHolder.getStripeCardHolderId(),
                 wallet.getStripeFinancialAccountId(),
-                connectAccount.getConnectAccountId());
+                connectAccount.getConnectAccountId(), wallet.getCurrency());
 
         Card card = new Card(stripeCard.getId(), cardHolder, wallet, user, stripeCard.getLast4(),
                 CardStatus.valueOf(stripeCard.getStatus()), stripeCard.getBrand(), stripeCard.getType(),

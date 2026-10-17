@@ -107,6 +107,7 @@ public class DtoHelper {
                 wallet.getName(),
                 toAccountDto(wallet.getAccount()),
                 wallet.getAvailableBalance(),
+                wallet.getCurrency(),
                 wallet.getCreatedAt(),
                 wallet.getUpdatedAt());
     }
@@ -263,6 +264,7 @@ public class DtoHelper {
                 wallet.getStripeFinancialAccountId(),
                 toAccountAdminDto(wallet.getAccount()),
                 wallet.getAvailableBalance(),
+                wallet.getCurrency(),
                 wallet.getIsDeleted(),
                 wallet.getDeletedAt(),
                 wallet.getCreatedAt(),

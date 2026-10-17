@@ -1,6 +1,6 @@
 package com.jexis.jexis_backend.wallet.domain.entities;
 
-import java.math.BigDecimal;
+import com.jexis.jexis_backend.wallet.domain.WalletCurrency;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -52,7 +52,12 @@ public class Wallet {
     @Getter
     @Setter
     @Column(nullable = false)
-    private Integer availableBalance = 0;
+    private Long availableBalance = 0L;
+
+    /** Actual denomination of the balance, which is stored in minor units. */
+    @Getter
+    @Column(nullable = false, length = 3, updatable = false)
+    private String currency = WalletCurrency.DEFAULT;
 
     @Getter
     @Setter

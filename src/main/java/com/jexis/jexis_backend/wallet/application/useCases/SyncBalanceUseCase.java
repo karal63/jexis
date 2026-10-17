@@ -7,7 +7,7 @@ import com.stripe.model.treasury.FinancialAccount;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
+import com.jexis.jexis_backend.wallet.domain.WalletCurrency;
 
 @Service
 @RequiredArgsConstructor
@@ -21,7 +21,13 @@ public class SyncBalanceUseCase {
 
         Wallet wallet = getWalletByFAIdUseCase.execute(financialAccount.getId());
 
-        wallet.setAvailableBalance(financialAccount.getBalance().getCash().get("usd").intValue());
+        String currency = WalletCurrency.toStripe(wallet.getCurrency());
+        Long balance = financialAccount.getBalance() == null || financialAccount.getBalance().getCash() == null
+                ? null : financialAccount.getBalance().getCash().get(currency);
+        if (balance == null) {
+            throw new IllegalStateException("Stripe financial account is missing its " + currency + " cash balance");
+        }
+        wallet.setAvailableBalance(balance);
         repo.save(wallet);
     }
 }

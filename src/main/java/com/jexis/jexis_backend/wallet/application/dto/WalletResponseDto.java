@@ -1,6 +1,5 @@
 package com.jexis.jexis_backend.wallet.application.dto;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -10,7 +9,8 @@ public record WalletResponseDto(
         UUID id,
         String name,
         AccountResponseDto account,
-        Integer availableBalance,
+        Long availableBalance,
+        String currency,
         LocalDateTime createdAt,
         LocalDateTime updatedAt) {
 
