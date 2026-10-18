@@ -107,6 +107,7 @@ public class DtoHelper {
                 wallet.getName(),
                 toAccountDto(wallet.getAccount()),
                 wallet.getAvailableBalance(),
+                wallet.getCurrency(),
                 wallet.getCreatedAt(),
                 wallet.getUpdatedAt());
     }
@@ -142,6 +143,8 @@ public class DtoHelper {
                 transaction.getType(),
                 transaction.getAmount(),
                 transaction.getCurrency(),
+                transaction.getMerchantAmount(),
+                transaction.getMerchantCurrency(),
                 transaction.getStatus(),
                 transaction.getDirection(),
                 transaction.getBankName(),
@@ -263,6 +266,7 @@ public class DtoHelper {
                 wallet.getStripeFinancialAccountId(),
                 toAccountAdminDto(wallet.getAccount()),
                 wallet.getAvailableBalance(),
+                wallet.getCurrency(),
                 wallet.getIsDeleted(),
                 wallet.getDeletedAt(),
                 wallet.getCreatedAt(),
@@ -306,6 +310,8 @@ public class DtoHelper {
                 transaction.getType().toString(),
                 transaction.getAmount(),
                 transaction.getCurrency(),
+                transaction.getMerchantAmount(),
+                transaction.getMerchantCurrency(),
                 transaction.getStatus().toString(),
                 transaction.getDirection().toString(),
                 transaction.getBankName(),

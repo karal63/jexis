@@ -57,6 +57,8 @@ public class CreateCardTransactionUseCase {
 
         transaction.setCard(card);
         transaction.setAuthorization(authorization.orElse(null));
+        transaction.setMerchantAmount(dto.merchantAmount());
+        transaction.setMerchantCurrency(dto.merchantCurrency());
         transaction.setMerchantName(dto.merchantName());
         transaction.setMerchantCategory(dto.merchantCategory());
         transaction.setMerchantCity(dto.merchantCity());

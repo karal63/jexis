@@ -358,7 +358,7 @@ class ResourceLimitsDatabaseTest {
     @Test void failedReplacementKeepsCancellationAndReservationAndCanRetry() {
         UUID originalId = tx.execute(s -> card(em.find(Account.class, accountId), CardStatus.active, false).getId());
         var dto = new ReplaceCardDto(CardReplacementReason.lost);
-        when(stripeCreate.execute(any(), any(), any(), any(), any(), eq("replace-card-" + originalId)))
+        when(stripeCreate.execute(any(), any(), any(), eq("USD"), any(), any(), eq("replace-card-" + originalId)))
                 .thenThrow(new RuntimeException("Stripe unavailable"));
         assertThatThrownBy(() -> replaceCard.execute(originalId, dto)).hasMessage("Stripe unavailable");
         tx.executeWithoutResult(s -> {
@@ -371,13 +371,13 @@ class ResourceLimitsDatabaseTest {
         var stripeCard = new com.stripe.model.issuing.Card();
         stripeCard.setId("replacement_" + originalId); stripeCard.setLast4("1234"); stripeCard.setStatus("active");
         stripeCard.setBrand("visa"); stripeCard.setType("virtual"); stripeCard.setCurrency("usd"); stripeCard.setExpYear(2030L);
-        when(stripeCreate.execute(any(), any(), any(), any(), any(), eq("replace-card-" + originalId))).thenReturn(stripeCard);
+        when(stripeCreate.execute(any(), any(), any(), eq("USD"), any(), any(), eq("replace-card-" + originalId))).thenReturn(stripeCard);
         Card replacement = replaceCard.execute(originalId, dto);
         Card retry = replaceCard.execute(originalId, dto);
         assertThat(retry.getId()).isEqualTo(replacement.getId());
         assertThat(checker.execute(accountId, AccountResource.CARDS, 0).used()).isEqualTo(1);
         verify(stripeEdit, times(1)).execute(any(), any(), eq(CardStatus.canceled));
-        verify(stripeCreate, times(2)).execute(any(), any(), any(), any(), any(), eq("replace-card-" + originalId));
+        verify(stripeCreate, times(2)).execute(any(), any(), any(), eq("USD"), any(), any(), eq("replace-card-" + originalId));
     }
 
     @Test void concurrentCardCreationCannotClaimTheSameSlot() throws Exception {
@@ -391,7 +391,7 @@ class ResourceLimitsDatabaseTest {
             request.setCardHolderId(original.getCardHolder().getId()); request.setWalletId(original.getTreasuryAccount().getId());
             return request;
         });
-        when(stripeCreate.execute(any(), any(), any())).thenAnswer(invocation -> {
+        when(stripeCreate.execute(any(), any(), any(), eq("USD"))).thenAnswer(invocation -> {
             var card = new com.stripe.model.issuing.Card();
             card.setId(UUID.randomUUID().toString()); card.setLast4("1234"); card.setStatus("active");
             card.setBrand("visa"); card.setType("virtual"); card.setCurrency("usd"); card.setExpYear(2030L);
@@ -411,7 +411,7 @@ class ResourceLimitsDatabaseTest {
             assertThat(List.of(first.get(15, TimeUnit.SECONDS), second.get(15, TimeUnit.SECONDS)))
                     .containsExactlyInAnyOrder(true, false);
             assertThat(checker.execute(accountId, AccountResource.CARDS, 0).used()).isEqualTo(2);
-            verify(stripeCreate, times(1)).execute(any(), any(), any());
+            verify(stripeCreate, times(1)).execute(any(), any(), any(), eq("USD"));
         } finally { executor.shutdownNow(); }
     }
 
@@ -435,7 +435,7 @@ class ResourceLimitsDatabaseTest {
         var stripeCard = new com.stripe.model.issuing.Card();
         stripeCard.setId("replacement_" + originalId); stripeCard.setLast4("1234"); stripeCard.setStatus("active");
         stripeCard.setBrand("visa"); stripeCard.setType("virtual"); stripeCard.setCurrency("usd"); stripeCard.setExpYear(2030L);
-        when(stripeCreate.execute(any(), any(), any(), any(), any(), any())).thenReturn(stripeCard);
+        when(stripeCreate.execute(any(), any(), any(), eq("USD"), any(), any(), any())).thenReturn(stripeCard);
         assertThat(replaceCard.execute(originalId, new ReplaceCardDto(CardReplacementReason.damaged))).isNotNull();
         assertThat(checker.execute(accountId, AccountResource.CARDS, 0).used()).isEqualTo(1);
     }

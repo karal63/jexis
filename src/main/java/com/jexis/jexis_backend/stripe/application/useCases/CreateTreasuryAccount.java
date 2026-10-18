@@ -1,6 +1,7 @@
 package com.jexis.jexis_backend.stripe.application.useCases;
 
 import org.springframework.stereotype.Service;
+import com.jexis.jexis_backend.wallet.domain.WalletCurrency;
 
 import com.stripe.StripeClient;
 import com.stripe.exception.StripeException;
@@ -20,7 +21,7 @@ public class CreateTreasuryAccount {
     public FinancialAccount execute(String connectAccountId, String walletName) {
         try {
             FinancialAccountCreateParams params = FinancialAccountCreateParams.builder()
-                    .addSupportedCurrency("usd")
+                    .addSupportedCurrency(WalletCurrency.toStripe(WalletCurrency.DEFAULT))
                     .setFeatures(
                             FinancialAccountCreateParams.Features.builder()
                                     .setDepositInsurance(

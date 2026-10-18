@@ -20,6 +20,22 @@ import static org.mockito.Mockito.when;
 class DtoHelperTest {
 
     @Test
+    void walletResponsesIncludeCurrencyAndPreserveLargeMinorUnitAmounts() {
+        var account = new com.jexis.jexis_backend.account.domain.entities.Account();
+        account.setOwner(new User());
+        var wallet = new com.jexis.jexis_backend.wallet.domain.entities.Wallet("Expenses", "fa_test", account);
+        wallet.setAvailableBalance(3_000_000_000L);
+        var helper = new DtoHelper(mock(GetPaymentMethodUseCase.class));
+        var response = helper.toWalletDto(wallet);
+        var adminResponse = helper.toWalletAdminDto(wallet);
+        assertEquals("USD", response.currency());
+        assertEquals(3_000_000_000L, response.availableBalance());
+        assertEquals("USD", adminResponse.currency());
+        assertEquals(3_000_000_000L, adminResponse.availableBalance());
+    }
+
+
+    @Test
     void optionalPaymentMethodDoesNotCallStripeWhenSubscriptionHasNoPaymentMethod() {
         GetPaymentMethodUseCase getPaymentMethodUseCase = mock(GetPaymentMethodUseCase.class);
         DtoHelper dtoHelper = new DtoHelper(getPaymentMethodUseCase);

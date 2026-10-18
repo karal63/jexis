@@ -8,6 +8,7 @@ import com.jexis.jexis_backend.wallet.domain.entities.Wallet;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
+import com.jexis.jexis_backend.wallet.domain.WalletCurrency;
 
 @Service
 public class AddMoneyUseCase {
@@ -24,6 +25,8 @@ public class AddMoneyUseCase {
     public void execute(UUID accountId, UUID walletId, AddReceivedCreditsDto body) {
         Wallet wallet = getWalletUseCase.execute(walletId);
         Account account = getAccountUseCase.execute(accountId);
+
+        WalletCurrency.requireMatch(wallet.getCurrency(), body.currency());
 
         addReceivedCreditsUseCase.execute(account.getConnectAccountId(), wallet.getStripeFinancialAccountId(), body);
     }

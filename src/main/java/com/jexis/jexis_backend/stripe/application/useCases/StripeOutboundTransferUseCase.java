@@ -7,6 +7,7 @@ import com.stripe.net.RequestOptions;
 import com.stripe.param.treasury.OutboundTransferCreateParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.jexis.jexis_backend.wallet.domain.WalletCurrency;
 
 @Service
 public class StripeOutboundTransferUseCase {
@@ -21,7 +22,7 @@ public class StripeOutboundTransferUseCase {
             OutboundTransferCreateParams params =
                     OutboundTransferCreateParams.builder()
                             .setAmount(dto.amount())
-                            .setCurrency(dto.currency())
+                            .setCurrency(WalletCurrency.toStripe(dto.currency()))
                             .setFinancialAccount(financialAccountId)
                             .setDescription(dto.description())
                             .setDestinationPaymentMethod(externalAccountId)

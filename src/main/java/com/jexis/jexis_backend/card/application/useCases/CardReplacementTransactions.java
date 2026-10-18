@@ -59,6 +59,7 @@ public class CardReplacementTransactions {
         var stripeCard = createStripeCard.execute(card.getCardHolder().getStripeCardHolderId(),
                 card.getTreasuryAccount().getStripeFinancialAccountId(),
                 card.getCardHolder().getAccount().getConnectAccountId(),
+                card.getTreasuryAccount().getCurrency(),
                 card.getStripeCardId(), card.getReplacementReason(), "replace-card-" + cardId);
         Card replacement = new Card(stripeCard.getId(), card.getCardHolder(), card.getTreasuryAccount(),
                 card.getUser(), stripeCard.getLast4(), CardStatus.valueOf(stripeCard.getStatus()),
