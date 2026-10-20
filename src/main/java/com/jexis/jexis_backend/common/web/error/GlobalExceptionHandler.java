@@ -1,5 +1,7 @@
 package com.jexis.jexis_backend.common.web.error;
 
+import com.jexis.jexis_backend.common.ratelimit.RateLimitException;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -44,6 +46,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(ex.getStatus() != null ? ex.getStatus() : HttpStatus.BAD_REQUEST.value())
                 .body(new ErrorResponse(ex.getStatus(), ex.getCode(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(RateLimitException.class)
+    public ResponseEntity<ErrorResponse> handleRateLimit(RateLimitException ex) {
+        return ResponseEntity.status(ex.status())
+                .header("Retry-After", Long.toString(ex.retryAfter()))
+                .header("Cache-Control", "no-store")
+                .body(new ErrorResponse(ex.status(), ex.code(), ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)

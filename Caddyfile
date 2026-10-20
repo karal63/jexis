@@ -1,3 +1,7 @@
 {$CADDY_ADDRESS} {
-    reverse_proxy backend:3000
+    reverse_proxy backend:3000 {
+        # Spring trusts forwarded headers; overwrite client-supplied identities.
+        header_up -Forwarded
+        header_up X-Forwarded-For {remote_host}
+    }
 }

@@ -1,4 +1,17 @@
 services:
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "128mb", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
   postgres:
     image: postgres:17-alpine
     environment:
@@ -33,5 +46,6 @@ services:
       - "127.0.0.1:5672:5672"
       - "127.0.0.1:15672:15672"
 volumes:
+  redis_data:
   postgres_data:
   rabbitmq_data:

@@ -1,10 +1,11 @@
 package com.jexis.jexis_backend.auth.presentation;
 
+import com.jexis.jexis_backend.common.ratelimit.RateLimitService;
+
 import java.time.Duration;
 
 import com.jexis.jexis_backend.auth.application.dto.*;
 import com.jexis.jexis_backend.auth.application.useCases.*;
-import com.jexis.jexis_backend.passwordResetToken.application.useCases.CreatePasswordResetTokenUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.jexis.jexis_backend.user.application.dto.CreateDto;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * AuthController
@@ -31,6 +33,7 @@ import jakarta.validation.Valid;
 @RequiredArgsConstructor
 public class AuthController {
     private final RequestPasswordResetUseCase requestPasswordResetUseCase;
+    private final RateLimitService rateLimits;
     public final SignupUseCase signupUseCase;
     public final LoginUseCase loginUseCase;
     public final RefreshTokensUseCase refreshTokensUseCase;
@@ -117,7 +120,9 @@ public class AuthController {
      * @return account and tokens
      */
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginDto body) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginDto body, HttpServletRequest request) {
+        rateLimits.check("login-identity", request.getRemoteAddr() + "|"
+                + RateLimitService.normalizeEmail(body.email()));
         LoginResult result = loginUseCase.execute(body);
         TokenPair tokens = result.tokens();
 

@@ -20,7 +20,7 @@ load_environment() {
         key=${line%%=*}; value=${line#*=}
         [[ "$key" =~ ^[A-Z][A-Z0-9_]*$ ]] || fail "Invalid environment key on line $line_number."
         case "$key" in
-            DB_*|RABBITMQ_*|APP_PORT|APP_ORIGIN|PUBLIC_API_URL|JWT_*|STRIPE_*|MAIL_*|CADDY_ADDRESS) ;;
+            DB_*|RABBITMQ_*|REDIS_URI|APP_PORT|APP_ORIGIN|PUBLIC_API_URL|JWT_*|STRIPE_*|MAIL_*|CADDY_ADDRESS) ;;
             *) fail "Unsupported environment key: $key" ;;
         esac
         [[ "$value" != \"* && "$value" != \'* && "$value" != *'${'* ]] || fail "Use an unquoted literal value for $key; variable references are unsupported."

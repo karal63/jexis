@@ -1,5 +1,8 @@
 package com.jexis.jexis_backend.auth.infrastructure.config;
 
+import com.jexis.jexis_backend.common.ratelimit.AuthRateLimitFilter;
+import com.jexis.jexis_backend.common.ratelimit.RateLimitService;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -14,10 +17,12 @@ import com.jexis.jexis_backend.auth.infrastructure.security.JwtUtil;
 @EnableMethodSecurity
 public class SecurityConfig {
 
+    private final RateLimitService rateLimits;
     private final JwtUtil jwtUtil;
     private final JwtAuthEntryPoint jwtAuthEntryPoint;
 
-    public SecurityConfig(JwtUtil jwtUtil, JwtAuthEntryPoint jwtAuthEntryPoint) {
+    public SecurityConfig(JwtUtil jwtUtil, JwtAuthEntryPoint jwtAuthEntryPoint, RateLimitService rateLimits) {
+        this.rateLimits = rateLimits;
         this.jwtUtil = jwtUtil;
         this.jwtAuthEntryPoint = jwtAuthEntryPoint;
     }
@@ -37,7 +42,8 @@ public class SecurityConfig {
                         .anyRequest().authenticated())
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(jwtAuthEntryPoint))
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new AuthRateLimitFilter(rateLimits), JwtFilter.class);
 
         return http.build();
     }

@@ -38,7 +38,9 @@ class EmailEnvironmentTest {
         var producer = mock(EmailProducer.class);
         var lookup = mock(GetUserByEmailUseCase.class);
         when(lookup.execute("test@example.com")).thenReturn(Optional.of(user()));
-        var service = new CreatePasswordResetTokenUseCase(mock(PasswordResetTokenRepository.class), lookup, producer);
+        var limits = mock(com.jexis.jexis_backend.common.ratelimit.RateLimitService.class);
+        when(limits.allowResetEmail(anyString())).thenReturn(true);
+        var service = new CreatePasswordResetTokenUseCase(mock(PasswordResetTokenRepository.class), lookup, producer, limits);
         ReflectionTestUtils.setField(service, "applicationOrigin", "https://app.example.com/");
         service.execute("test@example.com");
         var email = ArgumentCaptor.forClass(EmailTask.class);

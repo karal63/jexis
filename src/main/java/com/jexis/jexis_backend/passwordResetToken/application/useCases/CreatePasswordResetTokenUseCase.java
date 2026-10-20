@@ -1,5 +1,7 @@
 package com.jexis.jexis_backend.passwordResetToken.application.useCases;
 
+import com.jexis.jexis_backend.common.ratelimit.RateLimitService;
+
 import com.jexis.jexis_backend.emailService.infrastructure.messaging.EmailProducer;
 import com.jexis.jexis_backend.emailService.infrastructure.messaging.EmailTask;
 import com.jexis.jexis_backend.common.hashUtils.HashUtils;
@@ -28,8 +30,10 @@ public class CreatePasswordResetTokenUseCase {
     private final PasswordResetTokenRepository repo;
     private final GetUserByEmailUseCase getUserByEmailUseCase;
     private final EmailProducer emailProducer;
+    private final RateLimitService rateLimits;
 
     public void execute(String email) {
+        if (!rateLimits.allowResetEmail(email)) return;
         Optional<User> user = getUserByEmailUseCase.execute(email);
 
         if (user.isPresent()) {
