@@ -130,7 +130,7 @@ public class MemberController {
     }
 
     @PatchMapping("/accounts/{id}/members/{memberId}/edit")
-    @PreAuthorize("@memberAuthorization.canEdit(authentication.principal.id(), #id, #memberId)")
+    @PreAuthorize("@memberAuthorization.canEdit(authentication.principal.id(), #id)")
     public MemberResponseDto edit(@PathVariable UUID id, @PathVariable UUID memberId, @Valid @RequestBody EditMemberDto body) {
         Member member = editMemberUseCase.execute(memberId, body);
         return dtoHelper.toMemberDto(member);

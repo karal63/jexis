@@ -18,15 +18,13 @@ public class EditMemberUseCase {
     }
 
     public Member execute(UUID id, EditMemberDto body) {
-        Member member = repo.findById(id).orElseThrow(() -> new MemberNotFoundException());
+        Member member = repo.findById(id).orElseThrow(MemberNotFoundException::new);
 
         if (body.role() != null) {
             member.setRole(body.role());
         }
 
-        Member newMember = repo.save(member);
-
-        return newMember;
+        return repo.save(member);
     }
 
 }
