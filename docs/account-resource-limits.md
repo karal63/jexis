@@ -56,7 +56,7 @@ A pending replacement cannot be edited or deleted. Completed replacements may pr
 
 ## Verification
 
-`./gradlew test` covers API method authorization, limits and overrides, status/date boundaries, bootstrap owner creation, account isolation, blocked issuance, replacement failures/retries, and concurrent card/member creation. Database concurrency tests use isolated H2 in PostgreSQL compatibility mode; repeat deployment smoke tests against PostgreSQL before release.
+`./backend/gradlew -p backend test` covers API method authorization, limits and overrides, status/date boundaries, bootstrap owner creation, account isolation, blocked issuance, replacement failures/retries, and concurrent card/member creation. Database concurrency tests use isolated H2 in PostgreSQL compatibility mode; repeat deployment smoke tests against PostgreSQL before release.
 
 ## Existing card spending
 

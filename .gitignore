@@ -8,7 +8,7 @@ build/
 TODO.md
 LEARN.md
 application.yml
-/application.properties
+/backend/application.properties
 /.env
 .postman
 postman

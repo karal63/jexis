@@ -41,7 +41,7 @@ services:
     restart: unless-stopped
 
   backend:
-    build: .
+    build: ./backend
     env_file:
       - path: .env.prod
         format: raw

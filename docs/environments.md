@@ -29,7 +29,7 @@ readiness; a mail provider outage should not prevent the backend from starting.
 
 ## Changing the database schema
 
-Flyway runs versioned SQL from `src/main/resources/db/migration` before Hibernate.
+Flyway runs versioned SQL from `backend/src/main/resources/db/migration` before Hibernate.
 Hibernate validates mappings and never creates/updates DEV or PROD tables.
 
 - A new database runs `V1__initial_schema.sql` automatically.
@@ -46,10 +46,10 @@ For a reference schema generated from the current Java mappings without connecti
 to any database:
 
 ```bash
-./gradlew test --tests '*SchemaExportTest' --rerun-tasks
+./backend/gradlew -p backend test --tests '*SchemaExportTest' --rerun-tasks
 ```
 
-The result is `build/reference-schema.sql`. Review it when preparing migrations;
+The result is `backend/build/reference-schema.sql`. Review it when preparing migrations;
 do not blindly replace an applied V1 with new generated output.
 
 ## Preserving an existing database

@@ -1,4 +1,4 @@
-# Jexis Backend
+# Jexis
 
 Spring Boot 4 / Java 17 API with PostgreSQL, RabbitMQ, Redis, Stripe and JWT authentication.
 The API keeps its `/api` prefix. Select the environment using the launch scripts.
@@ -11,6 +11,15 @@ The API keeps its `/api` prefix. Select the environment using the launch scripts
 | PostgreSQL / RabbitMQ / Redis | Docker | Docker, separate data |
 | Entry point | `http://localhost:3000/api` | `http://localhost/api` or your HTTPS domain |
 | Swagger / SQL logging | Enabled | Disabled |
+
+## Repository layout
+
+- `backend/`: Spring Boot application, Java tests, Gradle wrapper, and Docker build.
+- `scripts/`, `compose.*.yml`, and `Caddyfile`: shared development/deployment tooling.
+- `tests/`: launch-script tests; `docs/`: project documentation.
+
+Run the commands below from the repository root. In an IDE, import `backend/` as
+the Gradle project. Private environment files stay at the repository root.
 
 ## First-time setup
 
@@ -96,7 +105,7 @@ or zero-downtime deployment. Back up before schema changes and follow the
 ## Verification
 
 ```bash
-./gradlew test bootJar
+./backend/gradlew -p backend test bootJar
 python3 -m unittest discover -s tests
 ```
 
@@ -107,7 +116,7 @@ database and create/drop only uniquely named test schemas:
 ```bash
 TEST_DATABASE_URL=jdbc:postgresql://localhost:5434/migration_tests \
 TEST_DATABASE_USERNAME=jexis TEST_DATABASE_PASSWORD=your-test-password \
-./gradlew migrationTest
+./backend/gradlew -p backend migrationTest
 ```
 
 Run this check against PostgreSQL 17 (the Docker version) before deployment. See the

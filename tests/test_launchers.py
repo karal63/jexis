@@ -51,6 +51,29 @@ class LaunchersTest(unittest.TestCase):
                                 SPRING_PROFILES_ACTIVE='prod')
         self.assertEqual(result.stdout, 'dev')
 
+    def test_dev_launches_gradle_from_backend(self):
+        env_file = self.root / '.env.dev'
+        env_file.write_text(env_file.read_text().replace('CHANGE_ME', 'test-value'))
+        backend = self.root / 'backend'
+        backend.mkdir()
+        wrapper = backend / 'gradlew'
+        wrapper.write_text('#!/usr/bin/env bash\nprintf "%s\\n" "$PWD" "$@" "$SPRING_PROFILES_ACTIVE"\n')
+        wrapper.chmod(0o755)
+        fake_bin = self.root / 'bin'
+        fake_bin.mkdir()
+        for name in ('java', 'docker'):
+            command = fake_bin / name
+            command.write_text('#!/usr/bin/env bash\nexit 0\n')
+            command.chmod(0o755)
+        result = subprocess.run(
+            ['bash', str(self.root / 'scripts/dev')], cwd=self.root.parent,
+            env={**os.environ, 'PATH': str(fake_bin) + os.pathsep + os.environ['PATH']},
+            text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        output = result.stdout.splitlines()
+        self.assertEqual(Path(output[-4]).resolve(), backend.resolve())
+        self.assertEqual(output[-3:], ['bootRun', '--args=--spring.profiles.active=dev', 'dev'])
+
     @unittest.skipUnless(shutil.which('docker'), 'Docker Compose CLI required')
     def test_compose_isolation_and_literal_passwords(self):
         # Compose re-escapes dollar signs when serializing its canonical model.
@@ -71,6 +94,8 @@ class LaunchersTest(unittest.TestCase):
         for service in ('postgres', 'rabbitmq', 'redis', 'backend'):
             self.assertNotIn('ports', configs['prod']['services'][service])
         self.assertEqual(configs['prod']['services']['backend']['environment']['SPRING_PROFILES_ACTIVE'], 'prod')
+        self.assertEqual(Path(configs['prod']['services']['backend']['build']['context']).resolve(),
+                         (self.root / 'backend').resolve())
         self.assertEqual(configs['prod']['services']['backend']['environment']['DB_PASSWORD'].replace('$$', '$'), r'a$literal#hash\slash')
 
 

@@ -6,4 +6,5 @@ command -v java >/dev/null || fail 'Install Java 17 or newer (Gradle uses a Java
 require_docker
 compose up -d --wait --wait-timeout 120
 printf '%s\n' "Starting DEV at http://localhost:$APP_PORT/api (Ctrl+C stops Java only)."
+cd "$ROOT/backend"
 exec ./gradlew bootRun --args='--spring.profiles.active=dev'
