@@ -1,5 +1,7 @@
 package com.jexis.jexis_backend.auth.application.useCases;
 
+import com.jexis.jexis_backend.common.ratelimit.RateLimitService;
+
 import java.util.Optional;
 import java.util.UUID;
 
@@ -28,10 +30,12 @@ import io.jsonwebtoken.Claims;
  */
 @Service
 public class RefreshTokensUseCase {
+    private final RateLimitService rateLimits;
     JwtUtil jwtUtil;
     UserRepository repo;
 
-    public RefreshTokensUseCase(JwtUtil jwtUtil, UserRepository repo) {
+    public RefreshTokensUseCase(JwtUtil jwtUtil, UserRepository repo, RateLimitService rateLimits) {
+        this.rateLimits = rateLimits;
         this.jwtUtil = jwtUtil;
         this.repo = repo;
     }
@@ -53,6 +57,8 @@ public class RefreshTokensUseCase {
         }
 
         Claims claims = jwtUtil.extractClaimsRt(token);
+
+        rateLimits.check("refresh-user", claims.get("id", String.class));
 
         Optional<User> user = repo.findById(UUID.fromString(claims.get("id", String.class)));
 

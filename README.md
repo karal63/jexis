@@ -1,6 +1,6 @@
 # Jexis Backend
 
-Spring Boot 4 / Java 17 API with PostgreSQL, RabbitMQ, Stripe and JWT authentication.
+Spring Boot 4 / Java 17 API with PostgreSQL, RabbitMQ, Redis, Stripe and JWT authentication.
 The API keeps its `/api` prefix. Select the environment using the launch scripts.
 
 | | DEV | PROD |
@@ -8,7 +8,7 @@ The API keeps its `/api` prefix. Select the environment using the launch scripts
 | Start | `./scripts/dev` | `./scripts/prod` |
 | Private configuration | `.env.dev` | `.env.prod` |
 | Java | Local Gradle process | Docker image |
-| PostgreSQL / RabbitMQ | Docker | Docker, separate data |
+| PostgreSQL / RabbitMQ / Redis | Docker | Docker, separate data |
 | Entry point | `http://localhost:3000/api` | `http://localhost/api` or your HTTPS domain |
 | Swagger / SQL logging | Enabled | Disabled |
 
@@ -53,18 +53,24 @@ PROD mode can use Stripe test credentials for a local rehearsal.
 ```
 
 DEV exposes PostgreSQL on `127.0.0.1:5434`, RabbitMQ on `127.0.0.1:5672`, and its
-management UI on `http://localhost:15672`. Swagger is at
+management UI on `http://localhost:15672`. Redis is available on `127.0.0.1:6379`. Swagger is at
 `http://localhost:3000/api/swagger-ui/index.html`.
 
 PROD only publishes Caddy's ports 80/443. Caddy forwards to the backend's internal
-port 3000; the backend connects to `postgres:5432` and `rabbitmq:5672` over its
+port 3000; the backend connects to `postgres:5432`, `rabbitmq:5672`, and `redis:6379` over its
 private Docker network. Do not put localhost database URLs into `.env.prod`.
 DEV and PROD use `jexis-dev` and `jexis-prod` project names and separate persistent
-PostgreSQL/RabbitMQ volumes. The old default Compose file is intentionally disabled.
+PostgreSQL/RabbitMQ/Redis volumes. The old default Compose file is intentionally disabled.
 
 The readiness endpoint is `/api/actuator/health`. It returns only health status,
 checks PostgreSQL and RabbitMQ, and does not require authentication. The older
 `/api/health` route is unchanged and is not used for container readiness.
+
+## Rate limiting
+
+Authentication and password recovery use Bucket4j with shared Redis counters.
+Redis starts automatically with either launch script. See [policies, tuning, and
+verification](docs/rate-limiting.md) for the limits, `429` responses, and outage behavior.
 
 ## Server deployment
 

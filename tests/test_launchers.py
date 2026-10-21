@@ -63,10 +63,12 @@ class LaunchersTest(unittest.TestCase):
             configs[mode] = json.loads(result.stdout)
             self.assertEqual(configs[mode]['services']['postgres']['environment']['POSTGRES_PASSWORD'].replace('$$', '$'),
                              r'a$literal#hash\slash')
-        self.assertEqual(set(configs['dev']['services']), {'postgres', 'rabbitmq'})
+        self.assertEqual(set(configs['dev']['services']), {'postgres', 'rabbitmq', 'redis'})
         self.assertNotEqual(configs['dev']['volumes']['postgres_data']['name'],
                             configs['prod']['volumes']['postgres_data']['name'])
-        for service in ('postgres', 'rabbitmq', 'backend'):
+        self.assertNotEqual(configs['dev']['volumes']['redis_data']['name'],
+                            configs['prod']['volumes']['redis_data']['name'])
+        for service in ('postgres', 'rabbitmq', 'redis', 'backend'):
             self.assertNotIn('ports', configs['prod']['services'][service])
         self.assertEqual(configs['prod']['services']['backend']['environment']['SPRING_PROFILES_ACTIVE'], 'prod')
         self.assertEqual(configs['prod']['services']['backend']['environment']['DB_PASSWORD'].replace('$$', '$'), r'a$literal#hash\slash')

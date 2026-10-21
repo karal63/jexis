@@ -25,6 +25,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-flyway'
     runtimeOnly 'org.flywaydb:flyway-database-postgresql'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'com.bucket4j:bucket4j_jdk17-lettuce:8.16.0'
+    implementation 'io.lettuce:lettuce-core'
 
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
 
@@ -53,7 +55,7 @@ dependencies {
 }
 
 tasks.named('test') {
-    useJUnitPlatform { excludeTags 'postgres' }
+    useJUnitPlatform { excludeTags 'postgres', 'redis' }
 }
 
 tasks.register('migrationTest', Test) {
@@ -72,4 +74,17 @@ tasks.register('migrationTest', Test) {
 
 tasks.named('bootJar') {
     archiveFileName = 'app.jar'
+}
+
+tasks.register('rateLimitIntegrationTest', Test) {
+    description = 'Verify distributed rate limits against an isolated Redis supplied through TEST_REDIS_URI.'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform { includeTags 'redis' }
+    doFirst {
+        if (!System.getenv('TEST_REDIS_URI')) {
+            throw new GradleException('Set TEST_REDIS_URI to a disposable Redis instance.')
+        }
+    }
 }
