@@ -95,7 +95,7 @@ limits alone do not stop distributed attacks using many source addresses.
 ## Verification
 
 ```bash
-./gradlew test bootJar
+./backend/gradlew -p backend test bootJar
 python3 -m unittest discover -s tests
 ```
 
@@ -103,7 +103,7 @@ Run the Redis integration suite against a disposable instance, not production:
 
 ```bash
 docker run --rm -d --name jexis-rate-limit-test -p 127.0.0.1:16379:6379 redis:7.4-alpine
-TEST_REDIS_URI=redis://127.0.0.1:16379 ./gradlew rateLimitIntegrationTest
+TEST_REDIS_URI=redis://127.0.0.1:16379 ./backend/gradlew -p backend rateLimitIntegrationTest
 docker stop jexis-rate-limit-test
 ```
 
