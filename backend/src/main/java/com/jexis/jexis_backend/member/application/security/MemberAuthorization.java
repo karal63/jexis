@@ -42,12 +42,8 @@ public class MemberAuthorization {
                 || hasRoleUseCase.execute(userId, accountId, Role.ADMIN);
     }
 
-    public boolean canEdit(UUID userId, UUID accountId, UUID memberId) {
-        Member member = getMemberUseCase.execute(memberId);
-
-        return (hasRoleUseCase.execute(userId, accountId, Role.OWNER)
-                || hasRoleUseCase.execute(userId, accountId, Role.ADMIN))
-                && member.getAccount().getId().equals(accountId);
+    public boolean canEdit(UUID userId, UUID accountId) {
+        return hasRoleUseCase.execute(userId, accountId, Role.OWNER);
     }
 
     public boolean canDelete(UUID userId, UUID accountId, UUID memberId) {
