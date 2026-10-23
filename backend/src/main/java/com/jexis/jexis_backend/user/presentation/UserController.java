@@ -41,7 +41,6 @@ import jakarta.validation.Valid;
 @RequestMapping("")
 @RequiredArgsConstructor
 public class UserController {
-
     private final GetUsersUseCase getUsersUseCase;
     private final CreateUserUseCase createUserUseCase;
     private final DeleteUserUseCase deleteUserUseCase;

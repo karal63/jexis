@@ -75,6 +75,13 @@ The readiness endpoint is `/api/actuator/health`. It returns only health status,
 checks PostgreSQL and RabbitMQ, and does not require authentication. The older
 `/api/health` route is unchanged and is not used for container readiness.
 
+## Authentication sessions
+
+Refresh tokens rotate once per use and are backed by revocable database sessions.
+Logout revokes the current session; password changes and deletion revoke all of
+that user's sessions. Access-token checks enforce revocation immediately. See
+[session behavior, deployment and frontend requirements](docs/auth-sessions.md).
+
 ## Rate limiting
 
 Authentication and password recovery use Bucket4j with shared Redis counters.
