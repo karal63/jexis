@@ -41,7 +41,8 @@ class AuthSessionIntegrationTest {
     @Autowired MemberRepository members;
     @Autowired com.jexis.jexis_backend.account.infrastructure.AccountRepository accounts;
     @Autowired RefreshTokensUseCase refresh;
-    @Autowired ChangePasswordUseCase changePassword;
+    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean
+    ChangePasswordUseCase changePassword;
     @Autowired DeleteUserUseCase deleteUser;
     @Autowired JwtUtil jwt;
     @Autowired org.springframework.transaction.PlatformTransactionManager transactionManager;
@@ -307,4 +308,89 @@ class AuthSessionIntegrationTest {
         deleteUser.execute(user.getId());
         assertThat(request("POST", "/auth/login", null, body).statusCode()).isEqualTo(400);
     }
+
+    private String resetToken(User user) {
+        String token = UUID.randomUUID().toString();
+        resetTokens.saveAndFlush(new com.jexis.jexis_backend.passwordResetToken.domain.entities.PasswordResetToken(
+                user, HashUtils.sha256(token), LocalDateTime.now().plusMinutes(30), LocalDateTime.now()));
+        return token;
+    }
+
+    private HttpResponse<String> reset(String token, String passwordJson) throws Exception {
+        return request("POST", "/users/reset-password/confirm", null,
+                "{\"token\":\"" + token + "\",\"password\":" + passwordJson + "}");
+    }
+
+    @Test void invalidResetPasswordsLeaveCredentialsSessionsAndTokenUntouched() throws Exception {
+        User user = user();
+        TokenPair pair = sessions.create(user.getId());
+        String token = resetToken(user);
+        for (String value : List.of("null", "\"\"", "\"        \"", "\"1234567\"", "\"" + "x".repeat(129) + "\"")) {
+            assertThat(reset(token, value).statusCode()).isEqualTo(400);
+        }
+        assertThat(users.findById(user.getId()).orElseThrow().getPassword()).isEqualTo("unused-hash");
+        assertThat(stored(pair).getRevokedAt()).isNull();
+        assertThat(resetTokens.findByTokenHash(HashUtils.sha256(token)).orElseThrow().getUsedAt()).isNull();
+    }
+
+    @Test void concurrentResetAllowsOnlyOnePasswordAndRejectsReplay() throws Exception {
+        User user = user();
+        TokenPair pair = sessions.create(user.getId());
+        String token = resetToken(user);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+        try {
+            List<Future<Integer>> results = new ArrayList<>();
+            for (String password : List.of("first-password", "second-password")) {
+                results.add(executor.submit(() -> {
+                    ready.countDown();
+                    if (!start.await(5, TimeUnit.SECONDS)) throw new AssertionError("Reset barrier timed out");
+                    return reset(token, "\"" + password + "\"").statusCode();
+                }));
+            }
+            assertThat(ready.await(5, TimeUnit.SECONDS)).isTrue();
+            start.countDown();
+            int first = results.get(0).get(20, TimeUnit.SECONDS);
+            int second = results.get(1).get(20, TimeUnit.SECONDS);
+            assertThat(List.of(first, second)).containsExactlyInAnyOrder(200, 400);
+            String hash = users.findById(user.getId()).orElseThrow().getPassword();
+            assertThat(new Argon2PasswordEncoder(16, 32, 1, 60000, 10)
+                    .matches(first == 200 ? "first-password" : "second-password", hash)).isTrue();
+            assertThat(resetTokens.findByTokenHash(HashUtils.sha256(token)).orElseThrow().getUsedAt()).isNotNull();
+            assertThat(stored(pair).getRevokedAt()).isNotNull();
+            assertThat(reset(token, "\"third-password\"").statusCode()).isEqualTo(400);
+            assertThat(users.findById(user.getId()).orElseThrow().getPassword()).isEqualTo(hash);
+        } finally { executor.shutdownNow(); }
+    }
+
+    @Test void failedResetRollsBackPasswordConsumptionAndSessionRevocation() throws Exception {
+        User user = user();
+        TokenPair pair = sessions.create(user.getId());
+        String token = resetToken(user);
+        org.mockito.Mockito.doAnswer(invocation -> {
+            invocation.callRealMethod();
+            throw new IllegalStateException("simulated failure after password write");
+        }).when(changePassword).execute(user.getId(), "new-password-123");
+        assertThat(reset(token, "\"new-password-123\"").statusCode()).isEqualTo(500);
+        assertThat(users.findById(user.getId()).orElseThrow().getPassword()).isEqualTo("unused-hash");
+        assertThat(stored(pair).getRevokedAt()).isNull();
+        assertThat(resetTokens.findByTokenHash(HashUtils.sha256(token)).orElseThrow().getUsedAt()).isNull();
+        org.mockito.Mockito.reset(changePassword);
+        assertThat(reset(token, "\"new-password-123\"").statusCode()).isEqualTo(200);
+    }
+
+    @Test void expiredUnknownAndBlankResetTokensCannotChangePassword() throws Exception {
+        User user = user();
+        String token = resetToken(user);
+        var expired = resetTokens.findByTokenHash(HashUtils.sha256(token)).orElseThrow();
+        expired.setExpiresAt(LocalDateTime.now().minusSeconds(1));
+        resetTokens.saveAndFlush(expired);
+        for (String invalid : List.of(token, "unknown", "", "   ")) {
+            assertThat(reset(invalid, "\"new-password-123\"").statusCode()).isEqualTo(400);
+        }
+        assertThat(users.findById(user.getId()).orElseThrow().getPassword()).isEqualTo("unused-hash");
+        assertThat(resetTokens.findById(expired.getId()).orElseThrow().getUsedAt()).isNull();
+    }
+
 }

@@ -71,3 +71,9 @@ TEST_AUTH_DATABASE_USERNAME=test_user TEST_AUTH_DATABASE_PASSWORD=test_password 
 
 The existing `migrationTest` task checks Flyway upgrades, preservation of existing
 users, session persistence and entity mapping against PostgreSQL in isolated schemas.
+
+Password reset uses the same nonblank, 8–128 character password policy as signup
+and administrator password changes. A conditional database update claims only an
+unused, unexpired reset token. Token consumption, password replacement and session
+revocation commit in one transaction, so concurrent redemption has one winner and
+a failed reset leaves the token available for retry.
