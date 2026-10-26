@@ -9,8 +9,8 @@ import com.jexis.jexis_backend.plan.domain.exceptions.PlanNotPublishedException;
 import com.jexis.jexis_backend.stripe.application.useCases.subscription.CreateStripeSubscriptionUseCase;
 import com.jexis.jexis_backend.subscription.application.dto.CreateSubscriptionDto;
 import com.jexis.jexis_backend.subscription.domain.entities.Subscription;
+import com.jexis.jexis_backend.subscription.domain.enums.SubscriptionOperationType;
 import com.jexis.jexis_backend.subscription.domain.exceptions.ForbiddenException;
-import com.jexis.jexis_backend.subscription.domain.exceptions.SubscriptionExistsForAccountException;
 import com.jexis.jexis_backend.user.application.useCases.GetPaymentMethodUseCase;
 import com.jexis.jexis_backend.user.application.useCases.GetUserUseCase;
 import com.jexis.jexis_backend.user.domain.entities.User;
@@ -27,9 +27,9 @@ public class CreateSubscriptionUseCase {
     private final GetUserUseCase getUserUseCase;
     private final GetPlanUseCase getPlanUseCase;
     private final GetPaymentMethodUseCase getPaymentMethodUseCase;
-    private final GetActiveAccountSubscriptionUseCase getActiveAccountSubscriptionUseCase;
     private final GetAccountUseCase getAccountUseCase;
     private final HandleExistingSubscriptionUseCase handleExistingSubscriptionUseCase;
+    private final SubscriptionOperationCommands subscriptionOperationCommands;
 
     public void execute(CreateSubscriptionDto dto, UUID userId) {
         User user = getUserUseCase.execute(userId);
@@ -43,23 +43,33 @@ public class CreateSubscriptionUseCase {
         if (plan.isFreePlan() || plan.getDefaultPrice().getStripePriceId() == null) {
             throw new LocalSubscriptionOperationException();
         }
-        Subscription activeSubscription = getActiveAccountSubscriptionUseCase.execute(account.getId());
+        var preparation = subscriptionOperationCommands.prepare(account.getId(), userId, plan.getId(),
+                SubscriptionOperationType.DIRECT, dto.getPaymentMethodId());
+        Subscription activeSubscription = preparation.activePaidSubscription();
 
         // check if account has active subscription with the same plan
-        if (activeSubscription != null && activeSubscription.getStripeSubscriptionId() != null) {
+        if (activeSubscription != null) {
             handleExistingSubscriptionUseCase.execute(activeSubscription, plan);
         } else {
-            PaymentMethod paymentMethod = getPaymentMethodUseCase.execute(user.getStripeCustomerId(), dto.getPaymentMethodId());
+            var operation = preparation.operation();
+            if (operation.getStripeSubscriptionId() != null) {
+                return;
+            }
+            PaymentMethod paymentMethod = getPaymentMethodUseCase.execute(
+                    user.getStripeCustomerId(), dto.getPaymentMethodId());
             if (paymentMethod.getCustomer().equals(user.getStripeCustomerId())) {
-                createStripeSubscriptionUseCase.execute(
+                com.stripe.model.Subscription stripeSubscription = createStripeSubscriptionUseCase.execute(
                         user.getStripeCustomerId(),
                         dto.getPaymentMethodId(),
                         plan.getDefaultPrice().getStripePriceId(),
                         user.getId(),
                         dto.getAccountId(),
-                        plan.getId()
+                        plan.getId(),
+                        "subscription-create-" + operation.getId()
                 );
+                subscriptionOperationCommands.completeDirect(operation.getId(), stripeSubscription.getId());
             } else {
+                subscriptionOperationCommands.abandon(operation.getId());
                 throw new ForbiddenException();
             }
         }

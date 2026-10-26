@@ -3,6 +3,7 @@ package com.jexis.jexis_backend.stripe.application.useCases.subscription;
 import com.stripe.StripeClient;
 import com.stripe.exception.StripeException;
 import com.stripe.model.checkout.Session;
+import com.stripe.net.RequestOptions;
 import com.stripe.param.checkout.SessionCreateParams;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,7 +18,8 @@ public class CreateStripeCheckoutUseCase {
     private String origin;
     private final StripeClient client;
 
-    public String execute(UUID planId, String stripePriceId, UUID userId, UUID accountId, String stripeAccountId) {
+    public String execute(UUID planId, String stripePriceId, UUID userId, UUID accountId,
+            String stripeAccountId, String idempotencyKey) {
         try {
             SessionCreateParams params = SessionCreateParams.builder()
                     .addLineItem(
@@ -40,7 +42,10 @@ public class CreateStripeCheckoutUseCase {
                     .setCancelUrl(origin + "/cancel")
                     .build();
 
-            Session session = client.v1().checkout().sessions().create(params);
+            RequestOptions options = RequestOptions.builder()
+                    .setIdempotencyKey(idempotencyKey)
+                    .build();
+            Session session = client.v1().checkout().sessions().create(params, options);
 
             return session.getUrl();
         } catch (StripeException e) {
