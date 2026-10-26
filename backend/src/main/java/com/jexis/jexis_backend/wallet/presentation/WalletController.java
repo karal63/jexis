@@ -1,5 +1,6 @@
 package com.jexis.jexis_backend.wallet.presentation;
 
+import org.springframework.web.bind.annotation.RequestHeader;
 import java.util.List;
 import java.util.UUID;
 
@@ -144,8 +145,9 @@ public class WalletController {
 
     @PostMapping("/wallets/{id}/create-outbound-transfer")
     @PreAuthorize("@walletAuthorization.canCreateOutboundTransfers(authentication.principal.id(), #id, #body.externalAccountId())")
-    public ResponseEntity<?> createOutboundTransfer(@PathVariable UUID id, @Valid @RequestBody CreateOutboundTransferDto body) {
-        createOutboundTransferUseCase.execute(id, body);
+    public ResponseEntity<?> createOutboundTransfer(@PathVariable UUID id, @Valid @RequestBody CreateOutboundTransferDto body,
+            @RequestHeader("Idempotency-Key") UUID requestKey) {
+        createOutboundTransferUseCase.execute(id, body, requestKey);
         return ResponseEntity.ok("Outbound transfer has been created");
     }
 

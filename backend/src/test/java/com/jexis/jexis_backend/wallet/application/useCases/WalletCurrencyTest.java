@@ -29,7 +29,8 @@ class WalletCurrencyTest {
     private final GetWalletUseCase wallets = mock(GetWalletUseCase.class);
     private final GetExternalAccountUseCase externalAccounts = mock(GetExternalAccountUseCase.class);
     private final StripeOutboundTransferUseCase stripeTransfer = mock(StripeOutboundTransferUseCase.class);
-    private final CreateOutboundTransferUseCase transfer = new CreateOutboundTransferUseCase(stripeTransfer, wallets, externalAccounts);
+    private final OutboundTransferCommands commands = mock(OutboundTransferCommands.class);
+    private final CreateOutboundTransferUseCase transfer = new CreateOutboundTransferUseCase(stripeTransfer, wallets, externalAccounts, commands);
 
     private void destination(String currency) {
         account.setConnectAccountId("acct_test");
@@ -43,8 +44,11 @@ class WalletCurrencyTest {
     void matchingTransferAcceptsEitherCase(String currency) {
         destination("usd");
         var body = new CreateOutboundTransferDto(100L, currency, "Transfer", externalId);
-        transfer.execute(walletId, body);
-        verify(stripeTransfer).execute("acct_test", "fa_test", "pm_test", body);
+        var command = new com.jexis.jexis_backend.wallet.domain.entities.OutboundTransferCommand();
+        command.setStripeTransferId("obt_existing");
+        when(commands.prepare(eq(wallet), any(), eq(body), any())).thenReturn(command);
+        transfer.execute(walletId, body, UUID.randomUUID());
+        verify(commands).prepare(eq(wallet), any(), eq(body), any());
     }
 
     @ParameterizedTest
@@ -53,7 +57,7 @@ class WalletCurrencyTest {
     void mismatchedRequestNeverReachesStripe(String currency) {
         destination("usd");
         assertThatThrownBy(() -> transfer.execute(walletId,
-                new CreateOutboundTransferDto(100L, currency, "Transfer", externalId)))
+                new CreateOutboundTransferDto(100L, currency, "Transfer", externalId), UUID.randomUUID()))
                 .isInstanceOf(WalletCurrencyException.class);
         verifyNoInteractions(stripeTransfer);
     }
@@ -61,7 +65,7 @@ class WalletCurrencyTest {
     @Test void mismatchedDestinationNeverReachesStripe() {
         destination("eur");
         assertThatThrownBy(() -> transfer.execute(walletId,
-                new CreateOutboundTransferDto(100L, "USD", "Transfer", externalId)))
+                new CreateOutboundTransferDto(100L, "USD", "Transfer", externalId), UUID.randomUUID()))
                 .isInstanceOf(WalletCurrencyException.class);
         verifyNoInteractions(stripeTransfer);
     }

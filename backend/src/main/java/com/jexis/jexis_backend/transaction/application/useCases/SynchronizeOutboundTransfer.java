@@ -10,8 +10,6 @@ import com.jexis.jexis_backend.transaction.infrastructure.TransactionRepository;
 import com.jexis.jexis_backend.wallet.application.useCases.GetWalletByFAIdUseCase;
 import com.jexis.jexis_backend.wallet.application.useCases.SyncBalanceUseCase;
 import com.jexis.jexis_backend.wallet.domain.entities.Wallet;
-import com.stripe.model.ExpandableField;
-import com.stripe.model.treasury.FinancialAccount;
 import com.stripe.model.treasury.OutboundTransfer;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
@@ -44,12 +42,14 @@ public class SynchronizeOutboundTransfer {
         Optional<Transaction> existingTransaction = transactionRepository
                 .findByStripeObjectId(transfer.getId());
 
+        // Refresh on updates too: cancellation and failure can release held funds.
+        syncBalanceUseCase.execute(accountId, transfer.getFinancialAccount());
+
         if (existingTransaction.isPresent()) {
             updateStatus(existingTransaction.get(), status);
             transactionRepository.save(existingTransaction.get());
         } else {
             com.stripe.model.treasury.Transaction treasuryTransaction = getStripeTransactionUseCase.execute(accountId, transfer.getTransaction());
-            syncBalanceUseCase.execute(accountId, treasuryTransaction.getFinancialAccount());
 
             Wallet wallet = getWalletByFAIdUseCase.execute(transfer.getFinancialAccount());
 
@@ -57,11 +57,12 @@ public class SynchronizeOutboundTransfer {
                     wallet,
                     treasuryTransaction.getId(),
                     transfer.getId(),
-                    TransactionType.INBOUND_TRANSFER,
+                    TransactionType.OUTBOUND_TRANSFER,
+                    // Preserve Stripe Treasury signed minor units (outgoing amounts are negative).
                     treasuryTransaction.getAmount(),
                     treasuryTransaction.getCurrency(),
-                    TransactionStatus.COMPLETED,
-                    TransactionDirection.CREDIT
+                    status,
+                    TransactionDirection.DEBIT
             );
 
             transaction.setBankName(transfer.getDestinationPaymentMethodDetails().getUsBankAccount().getBankName());

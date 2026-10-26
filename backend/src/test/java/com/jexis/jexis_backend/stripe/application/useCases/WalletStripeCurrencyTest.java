@@ -16,11 +16,11 @@ class WalletStripeCurrencyTest {
     @Test void outboundTransferUsesLowercaseCurrencyAndPreservesAmount() throws Exception {
         var client = mock(StripeClient.class, RETURNS_DEEP_STUBS);
         new StripeOutboundTransferUseCase(client).execute("acct_test", "fa_test", "pm_test",
-                new CreateOutboundTransferDto(3_000_000_000L, "USD", "Transfer", UUID.randomUUID()));
+                new CreateOutboundTransferDto(3_000_000_000L, "USD", "Transfer", UUID.randomUUID()), "stable-key");
         verify(client.v1().treasury().outboundTransfers()).create(
                 argThat((OutboundTransferCreateParams p) -> "usd".equals(p.getCurrency())
                         && p.getAmount() == 3_000_000_000L && "fa_test".equals(p.getFinancialAccount())),
-                argThat((RequestOptions p) -> "acct_test".equals(p.getStripeAccount())));
+                argThat((RequestOptions p) -> "acct_test".equals(p.getStripeAccount()) && "stable-key".equals(p.getIdempotencyKey())));
     }
 
     @Test void testFundingUsesLowercaseCurrency() throws Exception {
