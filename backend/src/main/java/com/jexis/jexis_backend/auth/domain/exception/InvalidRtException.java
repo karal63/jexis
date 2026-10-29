@@ -16,6 +16,6 @@ import com.jexis.jexis_backend.common.web.error.DomainException;
  */
 public class InvalidRtException extends DomainException {
     public InvalidRtException() {
-        super(HttpStatus.BAD_REQUEST.value(), "INVALID_RT", "Invalid refresh token");
+        super(HttpStatus.UNAUTHORIZED.value(), "INVALID_RT", "Invalid refresh token");
     }
 }

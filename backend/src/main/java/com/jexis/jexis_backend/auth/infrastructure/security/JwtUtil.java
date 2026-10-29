@@ -10,6 +10,7 @@ import com.jexis.jexis_backend.auth.application.dto.TokenPair;
 import com.jexis.jexis_backend.user.domain.enums.UserRole;
 
 import java.security.Key;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -25,12 +26,15 @@ public class JwtUtil {
 
     public JwtUtil(@Value("${jwt.secret.access}") String accessSecret,
             @Value("${jwt.secret.refresh}") String refreshSecret) {
-        this.ACCESS_TOKEN = Keys.hmacShaKeyFor(accessSecret.getBytes());
-        this.REFRESH_TOKEN = Keys.hmacShaKeyFor(refreshSecret.getBytes());
+        this.ACCESS_TOKEN = Keys.hmacShaKeyFor(accessSecret.getBytes(StandardCharsets.UTF_8));
+        this.REFRESH_TOKEN = Keys.hmacShaKeyFor(refreshSecret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public TokenPair generateTokens(UUID id, String name, String email, Boolean isActivated, List<UserRole> roles) {
+    public TokenPair generateTokens(UUID id, String name, String email, Boolean isActivated, List<UserRole> roles, UUID sessionId) {
         String accessToken = Jwts.builder()
+                .setId(UUID.randomUUID().toString())
+                .claim("sid", sessionId.toString())
+                .claim("token_use", "access")
                 .claim("id", id.toString())
                 .claim("name", name)
                 .claim("email", email)
@@ -42,6 +46,9 @@ public class JwtUtil {
                 .compact();
 
         String refreshToken = Jwts.builder()
+                .setId(UUID.randomUUID().toString())
+                .claim("sid", sessionId.toString())
+                .claim("token_use", "refresh")
                 .claim("id", id.toString())
                 .claim("name", name)
                 .claim("email", email)
@@ -59,7 +66,7 @@ public class JwtUtil {
         try {
             extractClaimsAt(token);
             return true;
-        } catch (JwtException e) {
+        } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
     }
@@ -68,14 +75,14 @@ public class JwtUtil {
         try {
             extractClaimsRt(token);
             return true;
-        } catch (JwtException e) {
-            e.printStackTrace();
+        } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
     }
 
     public Claims extractClaimsAt(String token) {
         return Jwts.parserBuilder()
+                .require("token_use", "access")
                 .setSigningKey(ACCESS_TOKEN)
                 .build()
                 .parseClaimsJws(token)
@@ -84,6 +91,7 @@ public class JwtUtil {
 
     public Claims extractClaimsRt(String token) {
         return Jwts.parserBuilder()
+                .require("token_use", "refresh")
                 .setSigningKey(REFRESH_TOKEN)
                 .build()
                 .parseClaimsJws(token)

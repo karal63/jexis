@@ -1,9 +1,11 @@
 package com.jexis.jexis_backend.user.application.dto;
 
-import jakarta.validation.constraints.NotNull;
+import com.jexis.jexis_backend.common.validation.ValidPassword;
+
+import jakarta.validation.constraints.NotBlank;
 
 public record ConfirmPasswordResetDto(
-        @NotNull String token,
-        @NotNull String password
+        @NotBlank String token,
+        @ValidPassword String password
         ) {
 }

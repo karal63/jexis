@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import com.jexis.jexis_backend.common.logging.AsyncLogger;
 import com.jexis.jexis_backend.auth.application.dto.SignupResult;
 import com.jexis.jexis_backend.auth.application.dto.TokenPair;
-import com.jexis.jexis_backend.auth.infrastructure.security.JwtUtil;
+import com.jexis.jexis_backend.auth.application.security.AuthSessionService;
 import com.jexis.jexis_backend.user.application.dto.CreateDto;
 import com.jexis.jexis_backend.user.application.dto.UserResponseDto;
 import com.jexis.jexis_backend.user.application.useCases.CreateUserUseCase;
@@ -26,12 +26,12 @@ import com.jexis.jexis_backend.user.domain.enums.UserRole;
  */
 @Service
 public class SignupUseCase {
-    JwtUtil jwtUtil;
-    CreateUserUseCase createUserUseCase;
+    private final AuthSessionService sessions;
+    private final CreateUserUseCase createUserUseCase;
     private final AsyncLogger logger;
 
-    public SignupUseCase(JwtUtil jwtUtil, CreateUserUseCase createUserUseCase, AsyncLogger logger) {
-        this.jwtUtil = jwtUtil;
+    public SignupUseCase(AuthSessionService sessions, CreateUserUseCase createUserUseCase, AsyncLogger logger) {
+        this.sessions = sessions;
         this.createUserUseCase = createUserUseCase;
         this.logger = logger;
     }
@@ -54,8 +54,7 @@ public class SignupUseCase {
         List<UserRole> roles = List.of(UserRole.USER);
         User user = createUserUseCase.execute(body, roles);
 
-        TokenPair tokens = jwtUtil.generateTokens(
-                user.getId(), user.getFirstName(), user.getEmail(), user.getIsActivated(), user.getRoles());
+        TokenPair tokens = sessions.create(user.getId());
 
         UserResponseDto userResponse = new UserResponseDto(user.getId(), user.getFirstName(),
                 user.getLastName(), user.getEmail(),

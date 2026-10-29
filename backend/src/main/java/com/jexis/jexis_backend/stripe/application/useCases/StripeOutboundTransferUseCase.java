@@ -5,7 +5,6 @@ import com.stripe.StripeClient;
 import com.stripe.exception.StripeException;
 import com.stripe.net.RequestOptions;
 import com.stripe.param.treasury.OutboundTransferCreateParams;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.jexis.jexis_backend.wallet.domain.WalletCurrency;
 
@@ -17,7 +16,7 @@ public class StripeOutboundTransferUseCase {
         this.client = client;
     }
 
-    public void execute(String accountId, String financialAccountId, String externalAccountId, CreateOutboundTransferDto dto) {
+    public String execute(String accountId, String financialAccountId, String externalAccountId, CreateOutboundTransferDto dto, String idempotencyKey) {
         try {
             OutboundTransferCreateParams params =
                     OutboundTransferCreateParams.builder()
@@ -29,12 +28,11 @@ public class StripeOutboundTransferUseCase {
                             .build();
 
             RequestOptions requestOptions =
-                    RequestOptions.builder().setStripeAccount(accountId).build();
+                    RequestOptions.builder().setStripeAccount(accountId).setIdempotencyKey(java.util.Objects.requireNonNull(idempotencyKey)).build();
 
-            client.v1().treasury().outboundTransfers().create(params, requestOptions);
+            return client.v1().treasury().outboundTransfers().create(params, requestOptions).getId();
 
         } catch(StripeException e) {
-            System.out.println(e);
             throw new RuntimeException("Error during creating outbound transfer", e);
         }
     }

@@ -7,12 +7,23 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.repository.query.Param;
 
 import com.jexis.jexis_backend.user.domain.entities.User;
 import com.jexis.jexis_backend.user.domain.enums.UserRole;
 
 public interface UserRepository extends JpaRepository<User, UUID> {
+    // Serialize session creation/rotation against password changes and deletion.
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select u from User u where u.id = :id and u.isDeleted = false")
+    Optional<User> findForSessionUpdate(@Param("id") UUID id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select u from User u where u.email = :email and u.isDeleted = false")
+    Optional<User> findForLogin(@Param("email") String email);
+
     Optional<User> findByEmailAndIsDeletedFalse(String email);
 
     Optional<User> findByEmailOrPhoneNumber(String email, String phoneNumber);

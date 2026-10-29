@@ -14,6 +14,7 @@ import com.jexis.jexis_backend.member.domain.entities.Member;
 import com.jexis.jexis_backend.member.domain.enums.Role;
 
 public interface MemberRepository extends JpaRepository<Member, UUID> {
+    void deleteByUserId(UUID userId);
     long countByAccountId(UUID accountId);
     public List<Member> findAllByAccountId(UUID accountId);
 

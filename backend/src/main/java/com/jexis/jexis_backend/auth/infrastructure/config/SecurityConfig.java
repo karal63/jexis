@@ -1,5 +1,7 @@
 package com.jexis.jexis_backend.auth.infrastructure.config;
 
+import com.jexis.jexis_backend.auth.application.security.AuthSessionService;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import com.jexis.jexis_backend.common.ratelimit.AuthRateLimitFilter;
 import com.jexis.jexis_backend.common.ratelimit.RateLimitService;
 
@@ -19,10 +21,12 @@ public class SecurityConfig {
 
     private final RateLimitService rateLimits;
     private final JwtUtil jwtUtil;
+    private final AuthSessionService sessions;
     private final JwtAuthEntryPoint jwtAuthEntryPoint;
 
-    public SecurityConfig(JwtUtil jwtUtil, JwtAuthEntryPoint jwtAuthEntryPoint, RateLimitService rateLimits) {
+    public SecurityConfig(JwtUtil jwtUtil, JwtAuthEntryPoint jwtAuthEntryPoint, RateLimitService rateLimits, AuthSessionService sessions) {
         this.rateLimits = rateLimits;
+        this.sessions = sessions;
         this.jwtUtil = jwtUtil;
         this.jwtAuthEntryPoint = jwtAuthEntryPoint;
     }
@@ -30,10 +34,11 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
-        JwtFilter jwtFilter = new JwtFilter(jwtUtil);
+        JwtFilter jwtFilter = new JwtFilter(jwtUtil, sessions);
 
         http
                 .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health", "/auth/**", "/swagger-ui/**", "/swagger-ui.html",
                                 "/v3/api-docs/**",

@@ -3,6 +3,7 @@ package com.jexis.jexis_backend.stripe.application.useCases.subscription;
 import com.stripe.StripeClient;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Subscription;
+import com.stripe.net.RequestOptions;
 import com.stripe.param.SubscriptionCreateParams;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,7 +17,7 @@ public class CreateStripeSubscriptionUseCase {
 
     public Subscription execute(
             String customerId, String paymentMethodId, String stripePriceId,
-            UUID userId, UUID accountId, UUID planId) {
+            UUID userId, UUID accountId, UUID planId, String idempotencyKey) {
         try {
             SubscriptionCreateParams params =
                     SubscriptionCreateParams.builder()
@@ -33,8 +34,10 @@ public class CreateStripeSubscriptionUseCase {
                             .putMetadata("planId", planId.toString())
                             .build();
 
-            Subscription subscription =
-                    client.v1().subscriptions().create(params);
+            RequestOptions options = RequestOptions.builder()
+                    .setIdempotencyKey(idempotencyKey)
+                    .build();
+            Subscription subscription = client.v1().subscriptions().create(params, options);
 
             return subscription;
         } catch (StripeException e) {

@@ -1,5 +1,6 @@
 package com.jexis.jexis_backend.auth.presentation;
 
+import com.jexis.jexis_backend.auth.application.security.AuthSessionService;
 import com.jexis.jexis_backend.common.ratelimit.RateLimitService;
 
 import java.time.Duration;
@@ -32,6 +33,7 @@ import jakarta.servlet.http.HttpServletRequest;
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
+    private final AuthSessionService sessions;
     private final RequestPasswordResetUseCase requestPasswordResetUseCase;
     private final RateLimitService rateLimits;
     public final SignupUseCase signupUseCase;
@@ -80,14 +82,17 @@ public class AuthController {
 
     /**
      * Endpoint to log out from existing account.
-     * This endpoint clears the authentication cookies by setting them with empty
+     * This endpoint revokes the current session and clears authentication cookies with empty
      * values and immediate expiration
-     * Endpoint: GET /auth/logout
+     * Endpoint: POST /auth/logout (GET retained for existing clients)
      *
      * @return a response with cleared cookies
      */
-    @GetMapping("/logout")
-    public ResponseEntity<?> logout() {
+    @RequestMapping(value = "/logout", method = {RequestMethod.POST, RequestMethod.GET})
+    public ResponseEntity<?> logout(
+            @CookieValue(name = "refresh_token", required = false) String refreshToken,
+            @CookieValue(name = "access_token", required = false) String accessToken) {
+        sessions.logout(refreshToken, accessToken);
         ResponseCookie accessCookie = ResponseCookie.from("access_token", "")
                 .httpOnly(true)
                 .secure(true)
@@ -160,7 +165,7 @@ public class AuthController {
      * @return account and tokens
      */
     @PostMapping("/refresh")
-    public ResponseEntity<?> refresh(@CookieValue(name = "refresh_token") String refreshToken) {
+    public ResponseEntity<?> refresh(@CookieValue(name = "refresh_token", required = false) String refreshToken) {
         LoginResult result = refreshTokensUseCase.execute(refreshToken);
         TokenPair tokens = result.tokens();
 

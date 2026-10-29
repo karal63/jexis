@@ -10,7 +10,10 @@ import org.springframework.context.annotation.Configuration;
 public class RabbitMQConfig {
 
     public static final String EXCHANGE = "email.exchange";
-    public static final String QUEUE = "email.queue";
+    // New name avoids incompatible redeclaration of the existing queue without DLX arguments.
+    public static final String QUEUE = "email.delivery.queue";
+    public static final String DEAD_EXCHANGE = "email.dead.exchange";
+    public static final String DEAD_QUEUE = "email.dead.queue";
     public static final String ROUTING_KEY = "email.routing.key";
 
     @Bean
@@ -20,12 +23,28 @@ public class RabbitMQConfig {
 
     @Bean
     public Queue emailQueue() {
-        return new Queue(QUEUE, true);
+        return QueueBuilder.durable(QUEUE).deadLetterExchange(DEAD_EXCHANGE)
+                .deadLetterRoutingKey(DEAD_QUEUE).build();
     }
 
     @Bean
     public Binding binding(Queue emailQueue, TopicExchange emailExchange) {
         return BindingBuilder.bind(emailQueue).to(emailExchange).with(ROUTING_KEY);
+    }
+
+    @Bean
+    public DirectExchange emailDeadExchange() {
+        return new DirectExchange(DEAD_EXCHANGE);
+    }
+
+    @Bean
+    public Queue emailDeadQueue() {
+        return QueueBuilder.durable(DEAD_QUEUE).build();
+    }
+
+    @Bean
+    public Binding deadBinding(Queue emailDeadQueue, DirectExchange emailDeadExchange) {
+        return BindingBuilder.bind(emailDeadQueue).to(emailDeadExchange).with(DEAD_QUEUE);
     }
 
     @Bean

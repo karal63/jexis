@@ -21,7 +21,7 @@ public class GetPasswordResetTokenByTokenUseCase {
         PasswordResetToken passwordResetToken = passwordResetTokenRepository.findByTokenHash(hashedToken)
                 .orElseThrow(InvalidPasswordResetTokenException::new);
 
-        if (passwordResetToken.getUsedAt() != null || passwordResetToken.getExpiresAt().isBefore(LocalDateTime.now())) {
+        if (passwordResetToken.getUsedAt() != null || !passwordResetToken.getExpiresAt().isAfter(LocalDateTime.now())) {
             throw new InvalidPasswordResetTokenException();
         }
 

@@ -11,6 +11,7 @@ import com.jexis.jexis_backend.stripe.application.useCases.subscription.CreateSt
 import com.jexis.jexis_backend.subscription.application.dto.CreateCheckoutDto;
 import com.jexis.jexis_backend.subscription.application.dto.CreateCheckoutResult;
 import com.jexis.jexis_backend.subscription.domain.entities.Subscription;
+import com.jexis.jexis_backend.subscription.domain.enums.SubscriptionOperationType;
 import com.jexis.jexis_backend.user.application.useCases.GetUserUseCase;
 import com.jexis.jexis_backend.user.domain.entities.User;
 import com.jexis.jexis_backend.user.infrastructure.UserRepository;
@@ -29,8 +30,8 @@ public class CreateCheckoutUseCase {
     private final CreateStripeCustomerUseCase createStripeCustomerUseCase;
     private final GetUserUseCase getUserUseCase;
     private final UserRepository userRepository;
-    private final GetActiveAccountSubscriptionUseCase getActiveAccountSubscriptionUseCase;
     private final HandleExistingSubscriptionUseCase handleExistingSubscriptionUseCase;
+    private final SubscriptionOperationCommands subscriptionOperationCommands;
 
     public CreateCheckoutResult execute(CreateCheckoutDto dto, UUID userId) {
         Plan plan = getPlanUseCase.execute(dto.getPlanId());
@@ -42,27 +43,37 @@ public class CreateCheckoutUseCase {
         }
         Account account = getAccountUseCase.execute(dto.getAccountId());
 
-        Subscription activeSubscription = getActiveAccountSubscriptionUseCase.execute(account.getId());
+        var preparation = subscriptionOperationCommands.prepare(account.getId(), userId, plan.getId(),
+                SubscriptionOperationType.CHECKOUT, null);
+        Subscription activeSubscription = preparation.activePaidSubscription();
 
-        if (activeSubscription != null && activeSubscription.getStripeSubscriptionId() != null) {
+        if (activeSubscription != null) {
             handleExistingSubscriptionUseCase.execute(activeSubscription, plan);
             return CreateCheckoutResult.changedSubscription();
         } else {
+            var operation = preparation.operation();
+            if (operation.getCheckoutUrl() != null) {
+                return CreateCheckoutResult.checkoutCreated(operation.getCheckoutUrl());
+            }
             User user = getUserUseCase.execute(userId);
 
             if (user.getStripeCustomerId() == null) {
-                Customer customer = createStripeCustomerUseCase.execute(user);
+                Customer customer = createStripeCustomerUseCase.execute(
+                        user, "subscription-customer-" + operation.getId());
                 user.setStripeCustomerId(customer.getId());
                 userRepository.save(user);
             }
 
-            return CreateCheckoutResult.checkoutCreated(createStripeCheckoutUseCase.execute(
+            String checkoutUrl = createStripeCheckoutUseCase.execute(
                     plan.getId(),
                     plan.getDefaultPrice().getStripePriceId(),
                     userId,
                     account.getId(),
-                    user.getStripeCustomerId()
-            ));
+                    user.getStripeCustomerId(),
+                    "subscription-checkout-" + operation.getId()
+            );
+            subscriptionOperationCommands.completeCheckout(operation.getId(), checkoutUrl);
+            return CreateCheckoutResult.checkoutCreated(checkoutUrl);
         }
     }
 }

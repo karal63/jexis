@@ -56,6 +56,13 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(ex.status(), ex.code(), ex.getMessage()));
     }
 
+    @ExceptionHandler({org.springframework.web.bind.MissingRequestHeaderException.class,
+            org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class})
+    public ResponseEntity<ErrorResponse> handleInvalidRequestParameter(Exception ex) {
+        return ResponseEntity.badRequest()
+                .body(new ErrorResponse(400, "INVALID_REQUEST_PARAMETER", "A required request parameter is missing or invalid"));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleServerError(Exception ex) {
         log.error("Unhandled request failure", ex);

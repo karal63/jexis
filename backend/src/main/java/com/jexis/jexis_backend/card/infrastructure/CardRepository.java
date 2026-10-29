@@ -26,6 +26,8 @@ public interface CardRepository extends JpaRepository<Card, UUID> {
                             @Param("statuses") List<CardStatus> statuses);
     List<Card> findByCardHolderAccountIdAndIsDeletedFalse(UUID accountId);
 
+    List<Card> findByUserIdAndCardHolderAccountIdAndIsDeletedFalse(UUID userId, UUID accountId);
+
     Optional<Card> findByIdAndIsDeletedFalse(UUID id);
 
     Optional<Card> findByStripeCardIdAndIsDeletedFalse(String stripeCardId);

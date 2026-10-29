@@ -10,6 +10,7 @@ import com.jexis.jexis_backend.common.hashUtils.HashUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.jexis.jexis_backend.common.logging.AsyncLogger;
 import com.jexis.jexis_backend.user.application.dto.CreateDto;
@@ -48,6 +49,7 @@ public class CreateUserUseCase {
      * 
      * @return a {@link User} containing the new user
      */
+    @Transactional
     public User execute(CreateDto body, List<UserRole> roles) {
         logger.info("USER", "Creating user for email: " + body.getEmail());
 

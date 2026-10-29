@@ -29,6 +29,15 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, UUID
             List<SubscriptionStatus> statuses);
     List<Subscription> findByAccountIdAndStripeSubscriptionIdIsNullAndStatus(UUID accountId, SubscriptionStatus status);
 
+    @Query("""
+            select s from Subscription s
+            where s.account.id = :accountId
+              and s.stripeSubscriptionId is not null
+              and s.status not in (SubscriptionStatus.CANCELED, SubscriptionStatus.INCOMPLETE_EXPIRED)
+            order by s.createdAt asc, s.id asc
+            """)
+    List<Subscription> findNonTerminalPaidSubscriptions(@Param("accountId") UUID accountId);
+
     Optional<Subscription> findByStripeSubscriptionId(String stripeSubscriptionId);
 
     Page<Subscription> findByUserId(UUID userId, Pageable pageable);

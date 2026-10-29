@@ -12,6 +12,7 @@ import com.jexis.jexis_backend.user.domain.entities.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.security.SecureRandom;
@@ -32,6 +33,7 @@ public class CreatePasswordResetTokenUseCase {
     private final EmailProducer emailProducer;
     private final RateLimitService rateLimits;
 
+    @Transactional
     public void execute(String email) {
         if (!rateLimits.allowResetEmail(email)) return;
         Optional<User> user = getUserByEmailUseCase.execute(email);

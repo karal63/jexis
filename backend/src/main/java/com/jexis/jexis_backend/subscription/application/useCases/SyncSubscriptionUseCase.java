@@ -1,6 +1,8 @@
 package com.jexis.jexis_backend.subscription.application.useCases;
 
 import org.springframework.transaction.annotation.Transactional;
+import com.jexis.jexis_backend.account.application.useCases.LockAccountUseCase;
+import com.jexis.jexis_backend.stripe.application.useCases.subscription.CancelDuplicateStripeSubscriptionUseCase;
 import com.jexis.jexis_backend.subscription.domain.enums.SubscriptionStatus;
 import com.jexis.jexis_backend.account.application.useCases.GetAccountUseCase;
 import com.jexis.jexis_backend.account.domain.entities.Account;
@@ -11,11 +13,11 @@ import com.jexis.jexis_backend.plan.domain.entities.Plan;
 import com.jexis.jexis_backend.plan.domain.entities.Price;
 import com.jexis.jexis_backend.subscription.domain.entities.Subscription;
 import com.jexis.jexis_backend.subscription.infrastructure.SubscriptionRepository;
+import com.jexis.jexis_backend.subscription.infrastructure.PendingSubscriptionOperationRepository;
 import com.jexis.jexis_backend.subscription.infrastructure.stripe.SubscriptionMapper;
 import com.jexis.jexis_backend.user.application.useCases.GetUserUseCase;
 import com.jexis.jexis_backend.user.domain.entities.User;
 import com.stripe.StripeClient;
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -33,27 +35,60 @@ public class SyncSubscriptionUseCase {
     private final GetPlanUseCase getPlanUseCase;
     private final GetPriceByStripeIdUseCase getPriceByStripeIdUseCase;
     private final SubscriptionMapper subscriptionMapper;
-    private final EntityManager entityManager;
     private final GetPlanByStripeIdUseCase getPlanByStripeIdUseCase;
     private final StripeClient client;
+    private final LockAccountUseCase lockAccountUseCase;
+    private final PendingSubscriptionOperationRepository pendingOperations;
+    private final CancelDuplicateStripeSubscriptionUseCase cancelDuplicateStripeSubscriptionUseCase;
 
     @Transactional
     public Subscription execute(com.stripe.model.Subscription stripeSub) {
-        entityManager.createNativeQuery(
-                        "SELECT pg_advisory_xact_lock(hashtext(?1))")
-                .setParameter(1, stripeSub.getId())
-                .getSingleResult();
+        String userId = stripeSub.getMetadata().get("userId");
+        String accountId = stripeSub.getMetadata().get("accountId");
+        String incomingSubscriptionId = stripeSub.getId();
+        UUID parsedAccountId = UUID.fromString(accountId);
+        lockAccountUseCase.execute(parsedAccountId);
+
+        var pendingOperation = pendingOperations.findByAccountId(parsedAccountId).orElse(null);
+        String canonicalSubscriptionId = pendingOperation == null
+                ? null : pendingOperation.getStripeSubscriptionId();
+        var otherPaidSubscriptions = subscriptionRepository
+                .findNonTerminalPaidSubscriptions(parsedAccountId)
+                .stream()
+                .filter(existing -> !incomingSubscriptionId.equals(existing.getStripeSubscriptionId()))
+                .toList();
+        if (canonicalSubscriptionId == null && !otherPaidSubscriptions.isEmpty()) {
+            canonicalSubscriptionId = otherPaidSubscriptions.get(0).getStripeSubscriptionId();
+        }
+        if (canonicalSubscriptionId == null) {
+            canonicalSubscriptionId = incomingSubscriptionId;
+            if (pendingOperation != null) {
+                pendingOperation.setStripeSubscriptionId(canonicalSubscriptionId);
+            }
+        }
+
+        boolean duplicate = !incomingSubscriptionId.equals(canonicalSubscriptionId);
+        if (duplicate) {
+            stripeSub = cancelDuplicateStripeSubscriptionUseCase.execute(stripeSub.getId());
+        } else {
+            LocalDateTime canceledAt = LocalDateTime.now(ZoneOffset.UTC);
+            for (Subscription other : otherPaidSubscriptions) {
+                cancelDuplicateStripeSubscriptionUseCase.execute(other.getStripeSubscriptionId());
+                other.setStatus(SubscriptionStatus.CANCELED);
+                other.setCancelAtPeriodEnd(false);
+                other.setCanceledAt(canceledAt);
+                other.setCurrentPeriodEnd(canceledAt);
+                subscriptionRepository.save(other);
+            }
+        }
 
         Subscription subscription = subscriptionRepository
                 .findByStripeSubscriptionId(stripeSub.getId())
                 .orElseGet(Subscription::new);
-
-        String userId = stripeSub.getMetadata().get("userId");
-        String accountId = stripeSub.getMetadata().get("accountId");
 //        String planId = stripeSub.getMetadata().get("planId");
 
         User user = getUserUseCase.execute(UUID.fromString(userId));
-        Account account = getAccountUseCase.execute(UUID.fromString(accountId));
+        Account account = getAccountUseCase.execute(parsedAccountId);
 
         var subscriptionItem = stripeSub
                 .getItems()
@@ -123,6 +158,9 @@ public class SyncSubscriptionUseCase {
                 local.setCanceledAt(LocalDateTime.now(ZoneOffset.UTC));
                 local.setCurrentPeriodEnd(local.getCanceledAt());
                 subscriptionRepository.save(local);
+            }
+            if (!duplicate && pendingOperation != null) {
+                pendingOperations.delete(pendingOperation);
             }
         }
         return subscriptionRepository.save(subscription);

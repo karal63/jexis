@@ -18,11 +18,21 @@ public class CreateOutboundTransferUseCase {
     private final GetWalletUseCase getWalletUseCase;
     private final GetExternalAccountUseCase getExternalAccountUseCase;
 
-    public void execute(UUID walletId, CreateOutboundTransferDto body) {
+    private final OutboundTransferCommands commands;
+
+    public void execute(UUID walletId, CreateOutboundTransferDto body, UUID requestKey) {
+        java.util.Objects.requireNonNull(requestKey, "Idempotency key is required");
         Wallet wallet = getWalletUseCase.execute(walletId);
         ExternalAccount externalAccount = getExternalAccountUseCase.execute(body.externalAccountId());
         WalletCurrency.requireMatch(wallet.getCurrency(), body.currency());
         WalletCurrency.requireMatch(wallet.getCurrency(), externalAccount.getCurrency());
-        stripeOutboundTransferUseCase.execute(wallet.getAccount().getConnectAccountId(), wallet.getStripeFinancialAccountId(), externalAccount.getStripeExternalAccountId(), body);
+        var command = commands.prepare(wallet, externalAccount, body, requestKey);
+        if (command.getStripeTransferId() != null) return;
+        var frozenBody = new CreateOutboundTransferDto(command.getAmount(), command.getCurrency(),
+                command.getDescription(), command.getExternalAccountId());
+        String transferId = stripeOutboundTransferUseCase.execute(command.getStripeAccountId(),
+                command.getFinancialAccountId(), command.getDestinationId(), frozenBody,
+                "outbound-transfer-" + command.getId());
+        commands.complete(command.getId(), transferId);
     }
 }
