@@ -16,11 +16,7 @@ public class EmailConsumer {
     @RabbitListener(queues = RabbitMQConfig.QUEUE)
     public void consumeEmailTask(EmailTask task) {
         log.info("Received email task for: {}", task.getTo());
-        try {
-            emailService.sendMail(task.getTo(), task.getSubject(), task.getBody());
-            log.info("Email sent successfully to: {}", task.getTo());
-        } catch (Exception e) {
-            log.error("Failed to send email to: {}", task.getTo(), e);
-        }
+        emailService.sendMail(task.getTo(), task.getSubject(), task.getBody());
+        log.info("Email sent successfully to: {}", task.getTo());
     }
 }
