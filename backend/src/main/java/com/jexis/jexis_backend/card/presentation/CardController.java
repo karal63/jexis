@@ -157,7 +157,7 @@ public class CardController {
      *
      * @param body contains payment data
      */
-    @PostMapping("/cards/test-card-payment")
+    @PostMapping("/test/cards/card-payment")
     public ResponseEntity<String> createTestPayment(@Valid @RequestBody TestCardPaymentDto body) {
         testCardPaymentUseCase.execute(body);
         return ResponseEntity.ok("Test payment created");
