@@ -1,7 +1,68 @@
 # Jexis
 
-Spring Boot 4 / Java 17 API with PostgreSQL, RabbitMQ, Redis, Stripe and JWT authentication.
-The API keeps its `/api` prefix. Select the environment using the launch scripts.
+Jexis is a multi-company financial platform for managing business accounts, teams,
+spending resources, and billing, while giving members access to the financial
+activity that belongs to them. Its workflows connect to Stripe for payments and
+card issuing.
+
+Jexis handles business and member records, authorization, financial workflows,
+and synchronization with payment-provider events. It is built with Spring Boot 4
+and Java 17, with PostgreSQL for durable records, RabbitMQ for message-driven work,
+Redis for shared rate limits, and Stripe for payment and issuing operations. The
+API keeps its `/api` prefix. Select the environment using the launch scripts.
+
+## What the project provides
+
+- **Identity and access:** account signup and activation, login, JWT access and
+  rotating refresh tokens, password recovery, logout, and revocable sessions.
+  Business accounts contain members with role-based access; global administrators
+  have separate administrative routes.
+- **Business accounts and teams:** create and manage company accounts, add or
+  remove members, and apply plan entitlements and configurable resource limits.
+  New business accounts receive a local free subscription; paid plans use Stripe
+  billing. See [free subscription behavior](docs/free-subscriptions.md) and
+  [member financial records](docs/member-resources.md).
+- **Spending and payments:** manage wallets and balances, cardholders, virtual or
+  physical cards, payment methods, and outbound transfers. Wallets currently use
+  USD. Stripe events update the service's local view of cards and financial
+  activity; test-only routes support development workflows.
+- **Financial activity:** read card transactions, authorizations, invoices, and
+  disputes at wallet, card, member, account, or administrative scopes as allowed
+  by the caller's role. Transaction data preserves both wallet-side and merchant-
+  side amounts when supplied by Stripe.
+- **Plans and subscriptions:** publish plans and prices, configure entitlements,
+  start or manage subscriptions, and access invoices. Stripe webhooks keep local
+  subscription and payment records synchronized.
+- **Operational safeguards:** rate limits for authentication and password
+  recovery, idempotent outbound-transfer requests, email delivery, readiness
+  checks, and database migrations. Behavior and operator guidance are documented
+  in the linked guides below.
+
+Most API routes require authentication. Stripe webhook routes are used for
+provider-to-service updates, while the actuator readiness endpoint is intended
+for deployment health checks. In development, Swagger provides an interactive
+API reference at `http://localhost:3000/api/swagger-ui/index.html`.
+
+## Product and operations guides
+
+- [Authentication sessions](docs/auth-sessions.md) — refresh rotation, revocation,
+  and client session expectations.
+- [Rate limiting](docs/rate-limiting.md) — limits, responses, and Redis outage
+  behavior.
+- [Wallet currency](docs/wallet-currency.md) and
+  [transaction currency](docs/transaction-currency.md) — amount and currency
+  contracts for clients.
+- [Outbound transfer retries](docs/outbound-transfer-retries.md) — safe use of
+  idempotency keys and reconciliation requirements.
+- [Email delivery](docs/email-delivery.md) — activation and recovery messages.
+- [Environment and operations guide](docs/environments.md) — existing data,
+  migrations, backups, and deployment checks.
+
+## Run and deploy
+
+The sections below cover local setup, daily development, production deployment,
+and verification. Choose DEV or PROD with the provided launch scripts; each mode
+has its own environment file and persistent service data.
 
 | | DEV | PROD |
 |---|---|---|

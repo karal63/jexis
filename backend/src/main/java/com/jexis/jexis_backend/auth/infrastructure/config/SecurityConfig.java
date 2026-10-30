@@ -7,6 +7,7 @@ import com.jexis.jexis_backend.common.ratelimit.RateLimitService;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
@@ -23,12 +24,15 @@ public class SecurityConfig {
     private final JwtUtil jwtUtil;
     private final AuthSessionService sessions;
     private final JwtAuthEntryPoint jwtAuthEntryPoint;
+    private final Environment environment;
 
-    public SecurityConfig(JwtUtil jwtUtil, JwtAuthEntryPoint jwtAuthEntryPoint, RateLimitService rateLimits, AuthSessionService sessions) {
+    public SecurityConfig(JwtUtil jwtUtil, JwtAuthEntryPoint jwtAuthEntryPoint, RateLimitService rateLimits,
+            AuthSessionService sessions, Environment environment) {
         this.rateLimits = rateLimits;
         this.sessions = sessions;
         this.jwtUtil = jwtUtil;
         this.jwtAuthEntryPoint = jwtAuthEntryPoint;
+        this.environment = environment;
     }
 
     @Bean
@@ -39,12 +43,18 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
+                .authorizeHttpRequests(auth -> {
+                    if (environment.matchesProfiles("prod")) {
+                        // Simulator and other test helper APIs must never be reachable in production.
+                        auth.requestMatchers("/test", "/test/**", "/**/test-*").denyAll();
+                    }
+                    auth
                         .requestMatchers("/actuator/health", "/auth/**", "/swagger-ui/**", "/swagger-ui.html",
                                 "/v3/api-docs/**",
                                 "/webjars/**", "/webhooks/**", "/user/activate", "/users/reset-password/confirm")
                         .permitAll()
-                        .anyRequest().authenticated())
+                        .anyRequest().authenticated();
+                })
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(jwtAuthEntryPoint))
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
