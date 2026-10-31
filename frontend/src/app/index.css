@@ -1,0 +1,81 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@theme inline {
+  --font-sans: "DM Sans", sans-serif;
+  --font-display: "Manrope", sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Existing auth form tokens */
+  --color-brand-forest: #17281f;
+  --color-brand-green: #294d34;
+  --color-brand-green-hover: #203e2a;
+  --color-brand-lime: #c7ed9e;
+  --color-brand-leaf: #365c43;
+  --color-ink: var(--foreground);
+  --color-ink-strong: var(--foreground);
+  --color-canvas: var(--background);
+  --color-surface: var(--card);
+  --color-line: var(--border);
+  --color-danger: #a63e34;
+  --color-danger-bg: #fff4f2;
+  --color-danger-line: #f0c9c4;
+}
+
+:root {
+  --background: #fafaf9;
+  --foreground: #171a17;
+  --card: #ffffff;
+  --card-foreground: #171a17;
+  --popover: #ffffff;
+  --popover-foreground: #171a17;
+  --primary: #202a22;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f2ef;
+  --secondary-foreground: #252a25;
+  --muted: #f1f2ef;
+  --muted-foreground: #71766f;
+  --accent: #edf0eb;
+  --accent-foreground: #202a22;
+  --destructive: #b42318;
+  --border: #e5e7e3;
+  --input: #e5e7e3;
+  --ring: #89958a;
+  --radius: 0.625rem;
+  --color-muted-light: #9aa29b;
+  --color-danger: #a63e34;
+  --color-danger-bg: #fff4f2;
+  --color-danger-line: #f0c9c4;
+}
+
+@layer base {
+  * { box-sizing: border-box; border-color: var(--border); }
+  html { font-family: var(--font-sans); color: var(--foreground); background: var(--background); scroll-behavior: smooth; }
+  body { min-width: 320px; min-height: 100vh; margin: 0; }
+  button, input { font: inherit; }
+  a { color: inherit; }
+  ::selection { background: #dce7dc; color: #17281f; }
+}
