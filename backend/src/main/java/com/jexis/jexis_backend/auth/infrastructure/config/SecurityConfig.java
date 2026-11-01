@@ -48,6 +48,7 @@ public class SecurityConfig {
                         // Simulator and other test helper APIs must never be reachable in production.
                         auth.requestMatchers("/test", "/test/**", "/**/test-*").denyAll();
                     }
+                    auth.requestMatchers("/auth/me").authenticated();
                     auth
                         .requestMatchers("/actuator/health", "/auth/**", "/swagger-ui/**", "/swagger-ui.html",
                                 "/v3/api-docs/**",

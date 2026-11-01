@@ -1,3 +1,5 @@
+import { Link, type LinkProps } from "react-router-dom";
+import type { AnchorHTMLAttributes } from "react";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/shared/lib/utils";
@@ -20,22 +22,41 @@ const buttonStyles = cva(
     },
 );
 
-type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
-    VariantProps<typeof buttonStyles> & { href?: string; children: ReactNode };
-
-export function Button({ href, variant, size, className, children, ...props }: ButtonProps) {
+type StyleProps = VariantProps<typeof buttonStyles> & { children: ReactNode; className?: string };
+type ButtonProps = StyleProps &
+    (
+        | ({ to: LinkProps["to"]; href?: never } & Omit<LinkProps, "to" | "children">)
+        | ({ href: string; to?: never } & AnchorHTMLAttributes<HTMLAnchorElement>)
+        | ({ href?: never; to?: never } & ButtonHTMLAttributes<HTMLButtonElement>)
+    );
+export function Button(props: ButtonProps) {
+    const { variant, size, className, children, ...rest } = props;
     const classes = cn(buttonStyles({ variant, size }), className);
-
-    if (href) {
+    if ("to" in rest && rest.to !== undefined) {
+        const { href: _href, ...linkProps } = rest as LinkProps & { href?: never };
         return (
-            <a className={classes} href={href}>
+            <Link {...linkProps} className={classes}>
+                {children}
+            </Link>
+        );
+    }
+    if ("href" in rest && rest.href !== undefined) {
+        const { to: _to, ...anchorProps } = rest as AnchorHTMLAttributes<HTMLAnchorElement> & {
+            href: string;
+            to?: never;
+        };
+        return (
+            <a {...anchorProps} className={classes}>
                 {children}
             </a>
         );
     }
-
     return (
-        <button className={classes} {...props}>
+        <button
+            type="button"
+            {...(rest as ButtonHTMLAttributes<HTMLButtonElement>)}
+            className={classes}
+        >
             {children}
         </button>
     );

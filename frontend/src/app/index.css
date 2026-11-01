@@ -28,19 +28,19 @@
     --radius-md: calc(var(--radius) - 2px);
     --radius-lg: var(--radius);
     --radius-xl: calc(var(--radius) + 4px);
-    --color-brand-forest: #17281f;
-    --color-brand-green: #294d34;
-    --color-brand-green-hover: #203e2a;
-    --color-brand-lime: #c7ed9e;
-    --color-brand-leaf: #365c43;
+    --color-brand-forest: var(--brand-forest);
+    --color-brand-green: var(--brand-green);
+    --color-brand-green-hover: var(--brand-green-hover);
+    --color-brand-lime: var(--brand-lime);
+    --color-brand-leaf: var(--brand-leaf);
     --color-ink: var(--foreground);
     --color-ink-strong: var(--foreground);
     --color-canvas: var(--background);
     --color-surface: var(--card);
     --color-line: var(--border);
-    --color-danger: #a63e34;
-    --color-danger-bg: #fff4f2;
-    --color-danger-line: #f0c9c4;
+    --color-danger: var(--danger);
+    --color-danger-bg: var(--danger-bg);
+    --color-danger-line: var(--danger-line);
 }
 
 :root {
@@ -62,7 +62,45 @@
     --border: #e5e7e3;
     --input: #e5e7e3;
     --ring: #89958a;
+    --brand-forest: #17281f;
+    --brand-green: #294d34;
+    --brand-green-hover: #203e2a;
+    --brand-lime: #c7ed9e;
+    --brand-leaf: #365c43;
+    --danger: #a63e34;
+    --danger-bg: #fff4f2;
+    --danger-line: #f0c9c4;
     --radius: 0.625rem;
+}
+
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --background: #101010;
+    --foreground: #f2f2f2;
+    --card: #1d1d1d;
+    --card-foreground: #f2f2f2;
+    --popover: #1d1d1d;
+    --popover-foreground: #f2f2f2;
+    --primary: #f0f0f0;
+    --primary-foreground: #171717;
+    --secondary: #252525;
+    --secondary-foreground: #ededed;
+    --muted: #252525;
+    --muted-foreground: #a1a1a1;
+    --accent: #2b2b2b;
+    --accent-foreground: #f2f2f2;
+    --destructive: #e08b85;
+    --border: #2c2c2c;
+    --input: #2c2c2c;
+    --ring: #888888;
+    --brand-forest: #101010;
+    --brand-green: #e5e5e5;
+    --brand-green-hover: #ffffff;
+    --brand-lime: #d4d4d4;
+    --brand-leaf: #b0b0b0;
+    --danger: #e08b85;
+    --danger-bg: #302020;
+    --danger-line: #5c3838;
 }
 
 @layer base {

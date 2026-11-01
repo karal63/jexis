@@ -57,12 +57,15 @@ function Header() {
             <Wordmark />
             <button
                 onClick={() => setMenuOpen(!menuOpen)}
+                aria-expanded={menuOpen}
+                aria-controls="primary-navigation"
                 aria-label={menuOpen ? "Close navigation" : "Open navigation"}
                 className="grid size-9 place-items-center rounded-md border border-border text-brand-green md:hidden"
             >
                 <Menu size={17} />
             </button>
             <nav
+                id="primary-navigation"
                 className={`${menuOpen ? "flex" : "hidden"} absolute left-4 right-4 top-[65px] z-10 flex-col gap-1 rounded-lg border border-border bg-card p-3 shadow-lg md:absolute md:left-1/2 md:right-auto md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:flex md:flex-row md:items-center md:gap-7 md:border-0 md:bg-transparent md:p-0 md:shadow-none`}
             >
                 <a
@@ -83,21 +86,23 @@ function Header() {
                     <Link className="px-3 text-xs font-semibold text-foreground/90" to="/login">
                         Sign in
                     </Link>
-                    <Button href="/signup" size="small">
+                    <Button to="/signup" size="small">
                         Get started <ArrowRight size={13} />
                     </Button>
                 </div>
             </nav>
-            <div className="hidden items-center gap-5 md:flex">
-                <Link
-                    className="text-xs font-semibold text-foreground/90 hover:text-brand-green"
-                    to="/login"
-                >
-                    Sign in
-                </Link>
-                <Button href="/signup" size="small">
-                    Get started <ArrowRight size={13} />
-                </Button>
+            <div className="flex items-center gap-3 sm:gap-5">
+                <div className="hidden items-center gap-5 md:flex">
+                    <Link
+                        className="text-xs font-semibold text-foreground/90 hover:text-brand-green"
+                        to="/login"
+                    >
+                        Sign in
+                    </Link>
+                    <Button to="/signup" size="small">
+                        Get started <ArrowRight size={13} />
+                    </Button>
+                </div>
             </div>
         </header>
     );
@@ -224,7 +229,7 @@ export default function LandingPage() {
                         workspace.
                     </p>
                     <div className="mt-7 flex flex-wrap justify-center gap-3 md:justify-start">
-                        <Button href="/signup">
+                        <Button to="/signup">
                             Create your account <ArrowRight size={15} />
                         </Button>
                         <Button href="#product" variant="secondary">
@@ -291,7 +296,7 @@ export default function LandingPage() {
                 <p className="mx-auto max-w-xl font-display text-xl font-medium leading-relaxed tracking-[-.035em] text-foreground/90 sm:text-2xl">
                     Less time keeping up with money. More time getting on with work.
                 </p>
-                <Button href="/signup" className="mt-6">
+                <Button to="/signup" className="mt-6">
                     Get started with Jexis <ArrowRight size={15} />
                 </Button>
             </section>
