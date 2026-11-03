@@ -7,7 +7,7 @@ export function AuthLayout({
     mode,
 }: {
     children: ReactNode;
-    mode: "login" | "signup" | "forgot";
+    mode: "login" | "signup" | "forgot" | "reset";
 }) {
     return (
         <main className="flex min-h-screen flex-col items-center bg-card px-5 pb-8 text-foreground">
@@ -36,7 +36,9 @@ export function AuthLayout({
                             ? "Sign in to your Jexis account"
                             : mode === "signup"
                               ? "Start managing your business finances with Jexis"
-                              : "Enter your email and we’ll send you a reset link."}
+                              : mode === "forgot"
+                                ? "Enter your email and we’ll send you a reset link."
+                                : "Choose a new password for your Jexis account."}
                     </p>
                 </div>
                 {children}

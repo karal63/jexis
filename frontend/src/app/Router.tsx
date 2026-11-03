@@ -4,6 +4,7 @@ const LandingPage = lazy(() => import("@/pages/landing/LandingPage"));
 const LoginPage = lazy(() => import("@/pages/auth/LoginPage"));
 const SignupPage = lazy(() => import("@/pages/auth/SignupPage"));
 const ForgotPasswordPage = lazy(() => import("@/pages/auth/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("@/pages/auth/ResetPasswordPage"));
 const HomePage = lazy(() => import("@/pages/home/HomePage"));
 import { useAppSelector } from "./hooks";
 import { Button } from "@/shared/ui/button";
@@ -29,6 +30,7 @@ export default function Router() {
         >
             <Routes>
                 <Route path="/" element={<LandingPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route element={<GuestOnly />}>
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/signup" element={<SignupPage />} />

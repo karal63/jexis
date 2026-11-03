@@ -22,6 +22,7 @@ export function createBaseQuery(): BaseQueryFn<string | FetchArgs, unknown, Fetc
             "/auth/login",
             "/auth/signup",
             "/auth/forgot-password",
+            "/users/reset-password/confirm",
             "/auth/logout",
         ].includes(url);
         if (coordinator.refresh) await coordinator.refresh;

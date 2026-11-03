@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { SignupRequest } from "../api/auth.types";
+import { newPasswordSchema } from "./password.schema";
 export const signupSchema = z
     .object({
         firstName: z.string().trim().min(1, "First name is required.").max(100),
@@ -9,11 +10,7 @@ export const signupSchema = z
             .string()
             .trim()
             .regex(/^[\d+\-()\s]*$/, "Enter a valid phone number."),
-        password: z
-            .string()
-            .min(8, "Password must be at least 8 characters.")
-            .max(128)
-            .refine((value) => value.trim().length > 0, "Password cannot be blank."),
+        password: newPasswordSchema,
         confirmPassword: z.string(),
     })
     .refine((values) => values.password === values.confirmPassword, {
