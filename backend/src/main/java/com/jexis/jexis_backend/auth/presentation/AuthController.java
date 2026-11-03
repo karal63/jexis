@@ -33,7 +33,16 @@ import jakarta.servlet.http.HttpServletRequest;
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
+    private final com.jexis.jexis_backend.user.application.useCases.GetUserUseCase getUserUseCase;
+    private final com.jexis.jexis_backend.common.dtoHelpers.DtoHelper dtoHelper;
     private final AuthSessionService sessions;
+
+    @GetMapping("/me")
+    public com.jexis.jexis_backend.user.application.dto.UserResponseDto currentUser(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal AuthUser user) {
+        return dtoHelper.toUserDto(getUserUseCase.execute(user.id()));
+    }
+
     private final RequestPasswordResetUseCase requestPasswordResetUseCase;
     private final RateLimitService rateLimits;
     public final SignupUseCase signupUseCase;

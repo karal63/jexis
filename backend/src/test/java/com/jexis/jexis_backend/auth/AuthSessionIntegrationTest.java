@@ -84,6 +84,17 @@ class AuthSessionIntegrationTest {
 
     private String cookie(TokenPair pair) { return "access_token=" + pair.getAccessToken(); }
 
+    @Test void currentUserRequiresSessionAndReturnsProfile() throws Exception {
+        assertThat(request("GET", "/auth/me", null, null).statusCode()).isEqualTo(401);
+        User user = user();
+        TokenPair pair = sessions.create(user.getId());
+        var response = request("GET", "/auth/me", cookie(pair), null);
+        assertThat(response.statusCode()).isEqualTo(200);
+        assertThat(response.body()).contains(user.getId().toString(), user.getEmail());
+        sessions.logout(pair.getRefreshToken(), pair.getAccessToken());
+        assertThat(request("GET", "/auth/me", cookie(pair), null).statusCode()).isEqualTo(401);
+    }
+
     @Test void refreshRotatesUniqueTokensAndStoresOnlyTheirHash() {
         User user = user();
         TokenPair initial = sessions.create(user.getId());
