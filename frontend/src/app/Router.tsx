@@ -8,6 +8,7 @@ const ResetPasswordPage = lazy(() => import("@/pages/auth/ResetPasswordPage"));
 const HomePage = lazy(() => import("@/pages/home/HomePage"));
 import { useAppSelector } from "./hooks";
 import { Button } from "@/shared/ui/button";
+import { PageLoader } from "@/shared/ui/page-loader";
 import { useI18n } from "@/shared/i18n/useI18n";
 
 function RequireSession() {
@@ -23,13 +24,7 @@ function GuestOnly() {
 export default function Router() {
     const { t } = useI18n();
     return (
-        <Suspense
-            fallback={
-                <p role="status" className="p-6">
-                    {t("route.loading")}
-                </p>
-            }
-        >
+        <Suspense fallback={<PageLoader label={t("route.loading")} />}>
             <Routes>
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
