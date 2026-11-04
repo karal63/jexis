@@ -5,7 +5,9 @@ const LoginPage = lazy(() => import("@/pages/auth/LoginPage"));
 const SignupPage = lazy(() => import("@/pages/auth/SignupPage"));
 const ForgotPasswordPage = lazy(() => import("@/pages/auth/ForgotPasswordPage"));
 const ResetPasswordPage = lazy(() => import("@/pages/auth/ResetPasswordPage"));
-const HomePage = lazy(() => import("@/pages/home/HomePage"));
+const AllAccountsPage = lazy(() => import("@/pages/accounts/AllAccountsPage"));
+const AccountPage = lazy(() => import("@/pages/accounts/AccountPage"));
+const SettingsPage = lazy(() => import("@/pages/settings/SettingsPage"));
 import { useAppSelector } from "./hooks";
 import { Button } from "@/shared/ui/button";
 import { PageLoader } from "@/shared/ui/page-loader";
@@ -34,7 +36,9 @@ export default function Router() {
                     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 </Route>
                 <Route element={<RequireSession />}>
-                    <Route path="/app" element={<HomePage />} />
+                    <Route path="/app" element={<AllAccountsPage />} />
+                    <Route path="/app/accounts/:accountId" element={<AccountPage />} />
+                    <Route path="/app/settings" element={<SettingsPage />} />
                 </Route>
                 <Route
                     path="*"

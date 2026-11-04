@@ -135,7 +135,7 @@ describe("session lifecycle", () => {
                 </MemoryRouter>
             </Provider>,
         );
-        expect(await screen.findByRole("heading", { name: "Welcome, Sam" })).toBeInTheDocument();
+        expect(await screen.findByRole("heading", { name: "All accounts" })).toBeInTheDocument();
         await userEvent.click(screen.getByRole("button", { name: "Sign out" }));
         expect(await screen.findByRole("heading", { name: "Welcome back" })).toBeInTheDocument();
         expect(store.getState().session.user).toBeNull();
@@ -150,7 +150,7 @@ describe("session lifecycle", () => {
                 </MemoryRouter>
             </Provider>,
         );
-        await screen.findByRole("heading", { name: "Welcome, Sam" });
+        await screen.findByRole("heading", { name: "All accounts" });
         await userEvent.click(screen.getByRole("button", { name: "Sign out" }));
         expect(await screen.findByRole("alert")).toHaveTextContent("Something went wrong");
         expect(store.getState().session.status).toBe("authenticated");
