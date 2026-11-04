@@ -2,8 +2,10 @@ import { useEffect, type ReactNode } from "react";
 import { useCurrentUserQuery, sessionReceived } from "@/features/auth";
 import { useAppDispatch, useAppSelector } from "../hooks";
 import { Button } from "@/shared/ui/button";
+import { useI18n } from "@/shared/i18n/useI18n";
 
 export function SessionProvider({ children }: { children: ReactNode }) {
+    const { t } = useI18n();
     const dispatch = useAppDispatch();
     const status = useAppSelector((state) => state.session.status);
     const { data, error, refetch } = useCurrentUserQuery(undefined, {
@@ -19,11 +21,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
             <main className="grid min-h-screen place-content-center gap-4 bg-background p-6 text-foreground">
                 {error ? (
                     <>
-                        <p role="alert">We couldn’t check your session. Please try again.</p>
-                        <Button onClick={() => refetch()}>Try again</Button>
+                        <p role="alert">{t("session.checkFailed")}</p>
+                        <Button onClick={() => refetch()}>{t("session.retry")}</Button>
                     </>
                 ) : (
-                    <p role="status">Checking your session…</p>
+                    <p role="status">{t("session.checking")}</p>
                 )}
             </main>
         );

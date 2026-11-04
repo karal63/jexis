@@ -4,6 +4,7 @@ import com.jexis.jexis_backend.common.ratelimit.RateLimitService;
 
 import com.jexis.jexis_backend.emailService.infrastructure.messaging.EmailProducer;
 import com.jexis.jexis_backend.emailService.infrastructure.messaging.EmailTask;
+import com.jexis.jexis_backend.emailService.application.EmailMessages;
 import com.jexis.jexis_backend.common.hashUtils.HashUtils;
 import com.jexis.jexis_backend.passwordResetToken.domain.entities.PasswordResetToken;
 import com.jexis.jexis_backend.passwordResetToken.infrastructure.PasswordResetTokenRepository;
@@ -59,19 +60,9 @@ public class CreatePasswordResetTokenUseCase {
             // send email task to RabbitMQ
             emailProducer.sendEmailTask(new EmailTask(
                     user.get().getEmail(),
-                    "Reset your password",
-                    """
-                    Hi %s,
-
-                    We received a request to reset your password.
-
-                    Click this link below to reset your password:
-
-                    %s/reset-password?token=%s
-
-                    This link expires in 30 minutes.
-
-                    If you didn't request this, ignore this email.""".formatted(user.get().getFirstName(), applicationOrigin.replaceAll("/+$", ""), token)
+                    EmailMessages.resetSubject(),
+                    EmailMessages.resetBody(user.get().getFirstName(),
+                            applicationOrigin.replaceAll("/+$", "") + "/reset-password?token=" + token)
             ));
         }
 

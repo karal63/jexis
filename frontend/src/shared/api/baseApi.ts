@@ -5,7 +5,16 @@ import { sessionEnded } from "./sessionEvents";
 
 // A separate coordinator per store also keeps tests and future SSR requests isolated.
 export function createBaseQuery(): BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> {
-    const request = fetchBaseQuery({ baseUrl: env.apiUrl, credentials: "include", timeout: 15000 });
+    const request = fetchBaseQuery({
+        baseUrl: env.apiUrl,
+        credentials: "include",
+        timeout: 15000,
+        prepareHeaders: (headers) => {
+            const locale = typeof document === "undefined" ? "en" : document.documentElement.lang;
+            headers.set("Accept-Language", locale === "pl" ? "pl" : "en");
+            return headers;
+        },
+    });
     const coordinators = new WeakMap<
         object,
         { refresh?: ReturnType<typeof request>; generation: number }

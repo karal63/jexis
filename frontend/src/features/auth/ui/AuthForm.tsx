@@ -1,13 +1,15 @@
 import type { ComponentProps } from "react";
 import { Button } from "@/shared/ui/button";
+import { useI18n } from "@/shared/i18n/useI18n";
 
 export function AuthForm(props: ComponentProps<"form">) {
     return <form {...props} noValidate className="space-y-1" />;
 }
 export function AuthSubmit({ loading, children }: { loading: boolean; children: React.ReactNode }) {
+    const { t } = useI18n();
     return (
         <Button type="submit" disabled={loading} aria-busy={loading} className="mt-2 w-full">
-            {loading ? "Please wait…" : children}
+            {loading ? t("common.wait") : children}
         </Button>
     );
 }

@@ -6,6 +6,6 @@ import com.jexis.jexis_backend.common.web.error.DomainException;
 
 public class CardHolderExistsException extends DomainException {
     public CardHolderExistsException(String email) {
-        super(HttpStatus.CONFLICT.value(), "EMAIL_EXISTS", "Card holder with email " + email + " in this account already exists");
+        super(HttpStatus.CONFLICT.value(), "CARDHOLDER_EMAIL_EXISTS", "Card holder with email " + email + " in this account already exists");
     }
 }

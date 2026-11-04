@@ -16,6 +16,7 @@ Run `npm run build`, `npm run lint`, `npm run format:check`, and `npm test` befo
 - `shared/api`: the common RTK Query API, transport behavior, session events, and normalized errors.
 - `shared/ui`: domain-independent controls with labels, errors, focus behavior, and consistent styling.
 - `shared/config`: environment configuration.
+- `shared/i18n`: i18next initialization, English and Polish catalogs, and locale helpers.
 
 Dependencies flow from app/pages to features to shared. Features must not import pages or app. Keep page-only components beside their page until reuse justifies extracting them. Do not add repositories or service classes around RTK Query by default.
 
@@ -24,6 +25,10 @@ Use local state for visual interactions, React Hook Form for forms, RTK Query fo
 ## API and session contract
 
 The common API uses `fetchBaseQuery` with cookies and a 15-second timeout. Add feature endpoints with `baseApi.injectEndpoints`; use one API cache per backend. Define request/response types at the feature boundary. Normalize failures with `getApiError`; use `applyFormError` to map known backend field names to React Hook Form errors.
+
+UI text uses `useI18n().t(key)`, backed by i18next, with entries in both `shared/i18n/en.ts` and `shared/i18n/pl.ts`. The selector in `shared/ui/language-select.tsx` saves `en` or `pl` in localStorage, starting from the browser language if no preference is saved. Form schemas are factories so their messages follow the selected language. API errors use the backend's stable `code`; the backend also returns a code per validation error in `errors[].code`. Unknown codes show a localized generic message rather than the server's message text. When adding a backend error code, add its `api.CODE` translation in both languages. Field validation uses the field name plus validation code for specific messages.
+
+API requests send the selected language in `Accept-Language`. The backend uses it for activation and password-reset emails; clients that do not send a language receive English copy.
 
 `GET /auth/me` restores the current user. On a protected request's 401, the transport calls `POST /auth/refresh` once and retries the original request once. Concurrent requests share an in-flight refresh within the store. Login, signup, forgot-password, and logout failures never trigger refresh. A rejected refresh ends the session and clears user caches; network/server errors allow retry without declaring the user logged out. Tokens remain in HttpOnly cookies, never localStorage or Redux.
 

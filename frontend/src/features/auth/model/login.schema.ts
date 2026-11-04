@@ -1,9 +1,12 @@
 import { z } from "zod";
-import { newPasswordSchema } from "./password.schema";
+import { passwordSchema } from "./password.schema";
+import { en, type Translator } from "@/shared/i18n/en";
 
-export const loginSchema = z.object({
-    email: z.email("Enter a valid email address."),
-    password: newPasswordSchema,
-});
+export const createLoginSchema = (t: Translator) =>
+    z.object({
+        email: z.email(t("validation.email")),
+        password: passwordSchema(t),
+    });
+export const loginSchema = createLoginSchema((key) => en[key]);
 
 export type LoginValues = z.infer<typeof loginSchema>;

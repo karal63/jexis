@@ -79,6 +79,7 @@ public class GlobalExceptionHandler {
                 .stream()
                 .map(error -> new ValidationError(
                         error.getField(),
+                        "VALIDATION_" + (error.getCode() == null ? "INVALID" : error.getCode().toUpperCase(Locale.ROOT)),
                         error.getDefaultMessage()))
                 .toList();
 
@@ -113,7 +114,7 @@ public class GlobalExceptionHandler {
                             HttpStatus.BAD_REQUEST.value(),
                             "VALIDATION_ERROR",
                             "Validation error",
-                            List.of(new ValidationError(field, message))
+                            List.of(new ValidationError(field, "VALIDATION_INVALID_ENUM", message))
                     ));
         }
 

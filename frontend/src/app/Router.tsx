@@ -8,6 +8,7 @@ const ResetPasswordPage = lazy(() => import("@/pages/auth/ResetPasswordPage"));
 const HomePage = lazy(() => import("@/pages/home/HomePage"));
 import { useAppSelector } from "./hooks";
 import { Button } from "@/shared/ui/button";
+import { useI18n } from "@/shared/i18n/useI18n";
 
 function RequireSession() {
     const status = useAppSelector((state) => state.session.status);
@@ -20,11 +21,12 @@ function GuestOnly() {
 }
 
 export default function Router() {
+    const { t } = useI18n();
     return (
         <Suspense
             fallback={
                 <p role="status" className="p-6">
-                    Loading page…
+                    {t("route.loading")}
                 </p>
             }
         >
@@ -43,8 +45,8 @@ export default function Router() {
                     path="*"
                     element={
                         <main className="grid min-h-screen place-content-center gap-4 p-6">
-                            <h1>Page not found</h1>
-                            <Button to="/">Back to Jexis</Button>
+                            <h1>{t("route.notFound")}</h1>
+                            <Button to="/">{t("common.backToJexis")}</Button>
                         </main>
                     }
                 />
