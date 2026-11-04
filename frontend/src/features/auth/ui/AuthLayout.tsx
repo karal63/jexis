@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { ArrowLeft, Leaf } from "lucide-react";
 import { Link } from "react-router-dom";
-import { LanguageSelect } from "@/shared/ui/language-select";
 import { useI18n } from "@/shared/i18n/useI18n";
 
 export function AuthLayout({
@@ -24,9 +23,6 @@ export function AuthLayout({
                     </span>
                     jexis
                 </Link>
-                <div className="absolute right-0 top-[6vh]">
-                    <LanguageSelect />
-                </div>
             </header>
             <section className="mx-auto mt-[clamp(56px,11vh,128px)] w-full max-w-[430px] pb-10">
                 <div className="mb-8 text-center">

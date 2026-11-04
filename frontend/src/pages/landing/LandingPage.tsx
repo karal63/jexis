@@ -107,7 +107,6 @@ function Header() {
                         {t("common.getStarted")} <ArrowRight size={13} />
                     </Button>
                 </div>
-                <LanguageSelect />
             </div>
         </header>
     );
@@ -314,7 +313,7 @@ export default function LandingPage() {
                 </Button>
             </section>
             <footer className="border-t border-border px-5 py-5">
-                <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 sm:flex-row">
+                <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 sm:flex-row sm:flex-wrap">
                     <Wordmark />
                     <span className="text-[10px] text-muted-foreground/90 sm:ml-2">
                         {t("landing.tagline")}
@@ -326,6 +325,7 @@ export default function LandingPage() {
                         <a href="mailto:hello@jexis.com">{t("landing.contact")}</a>
                     </div>
                     <span className="text-[10px] text-muted-foreground/70">© 2026 Jexis</span>
+                    <LanguageSelect />
                 </div>
             </footer>
         </main>

@@ -5,7 +5,6 @@ import { sessionEnded } from "@/shared/api/sessionEvents";
 import { getApiError } from "@/shared/api/apiError";
 import { Button } from "@/shared/ui/button";
 import { setTheme, type Theme } from "@/features/theme/store/themeSlice";
-import { LanguageSelect } from "@/shared/ui/language-select";
 import { useI18n } from "@/shared/i18n/useI18n";
 
 export default function HomePage() {
@@ -29,9 +28,6 @@ export default function HomePage() {
     return (
         <main className="min-h-screen bg-background px-6 py-12 text-foreground">
             <section className="mx-auto max-w-3xl space-y-6">
-                <div className="flex justify-end">
-                    <LanguageSelect />
-                </div>
                 <h1 className="font-display text-3xl font-bold">
                     {t("home.welcome", { name: user?.firstName ?? "" })}
                 </h1>
