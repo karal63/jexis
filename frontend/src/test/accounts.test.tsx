@@ -56,7 +56,7 @@ function mount() {
 }
 
 describe("all accounts", () => {
-    it("opens the personal settings placeholder from the footer", async () => {
+    it("changes theme and language in personal settings", async () => {
         vi.spyOn(globalThis, "fetch").mockResolvedValue(
             json({ items: [], page: 1, pageSize: 12, totalItems: 0, totalPages: 0 }),
         );
@@ -64,8 +64,27 @@ describe("all accounts", () => {
 
         await userEvent.click(await screen.findByRole("link", { name: "Settings" }));
         expect(await screen.findByRole("heading", { name: "Settings" })).toBeInTheDocument();
+        expect(screen.getByRole("heading", { name: "Preferences" })).toBeInTheDocument();
+        expect(screen.getByRole("heading", { name: "Currency" })).toBeInTheDocument();
         expect(screen.getByText("Appearance")).toBeInTheDocument();
         expect(screen.getByText("Language")).toBeInTheDocument();
+        expect(screen.getByText("USD")).toBeInTheDocument();
+
+        await userEvent.selectOptions(screen.getByRole("combobox", { name: "Appearance" }), "dark");
+        await waitFor(() => expect(document.documentElement.dataset.theme).toBe("dark"));
+        expect(localStorage.getItem("theme")).toBe("dark");
+
+        await userEvent.selectOptions(screen.getByRole("combobox", { name: "Language" }), "pl");
+        expect(screen.getByRole("heading", { name: "Ustawienia" })).toBeInTheDocument();
+        expect(document.documentElement.lang).toBe("pl");
+        expect(localStorage.getItem("locale")).toBe("pl");
+        expect(screen.getByText("USD")).toBeInTheDocument();
+
+        await userEvent.selectOptions(screen.getByRole("combobox", { name: "Język" }), "en");
+        await userEvent.selectOptions(
+            screen.getByRole("combobox", { name: "Appearance" }),
+            "system",
+        );
     });
 
     it("loads memberships and opens the selected account", async () => {
