@@ -1,7 +1,10 @@
 import { z } from "zod";
+import { en, type Translator } from "@/shared/i18n/en";
 
-export const newPasswordSchema = z
-    .string()
-    .min(8, "Password must be at least 8 characters.")
-    .max(128, "Password must be at most 128 characters.")
-    .refine((value) => value.trim().length > 0, "Password cannot be blank.");
+export const passwordSchema = (t: Translator) =>
+    z
+        .string()
+        .min(8, t("validation.passwordMin"))
+        .max(128, t("validation.passwordMax"))
+        .refine((value) => value.trim().length > 0, t("validation.passwordBlank"));
+export const newPasswordSchema = passwordSchema((key) => en[key]);

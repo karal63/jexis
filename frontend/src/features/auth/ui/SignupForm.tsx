@@ -1,7 +1,7 @@
 import { useSignupMutation } from "../api/authApi";
 import { toSignupRequest } from "../model/signup.schema";
 import { PasswordInput } from "@/shared/ui/password-input";
-import { signupSchema, type SignupValues } from "../model/signup.schema";
+import { createSignupSchema, type SignupValues } from "../model/signup.schema";
 import { applyFormError } from "../model/applyFormError";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
@@ -9,17 +9,22 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { FormField as AuthField } from "@/shared/ui/form-field";
 import { AuthForm, AuthSubmit, FormError } from "./AuthForm";
+import { useI18n } from "@/shared/i18n/useI18n";
+import { useEffect } from "react";
 
 export function SignupForm({ onSuccess }: { onSuccess: () => void }) {
+    const { t, locale } = useI18n();
     const {
         register,
         handleSubmit,
         setError,
+        clearErrors,
         formState: { errors, isSubmitting },
     } = useForm<SignupValues>({
-        resolver: zodResolver(signupSchema),
+        resolver: zodResolver(createSignupSchema(t)),
         defaultValues: { phoneNumber: "" },
     });
+    useEffect(() => clearErrors(), [clearErrors, locale]);
 
     const [signup] = useSignupMutation();
     async function submit(values: SignupValues) {
@@ -27,13 +32,12 @@ export function SignupForm({ onSuccess }: { onSuccess: () => void }) {
             await signup(toSignupRequest(values)).unwrap();
             onSuccess();
         } catch (error) {
-            applyFormError(error, setError, [
-                "firstName",
-                "lastName",
-                "email",
-                "phoneNumber",
-                "password",
-            ]);
+            applyFormError(
+                error,
+                setError,
+                ["firstName", "lastName", "email", "phoneNumber", "password"],
+                t,
+            );
         }
     }
 
@@ -42,7 +46,7 @@ export function SignupForm({ onSuccess }: { onSuccess: () => void }) {
             <AuthForm onSubmit={handleSubmit(submit)}>
                 <div className="grid grid-cols-2 gap-3">
                     <AuthField
-                        label="First name"
+                        label={t("auth.firstName")}
                         autoComplete="given-name"
                         placeholder="Sam"
                         error={errors.firstName?.message}
@@ -50,7 +54,7 @@ export function SignupForm({ onSuccess }: { onSuccess: () => void }) {
                         name="firstName"
                     />
                     <AuthField
-                        label="Last name"
+                        label={t("auth.lastName")}
                         autoComplete="family-name"
                         placeholder="Taylor"
                         error={errors.lastName?.message}
@@ -59,7 +63,7 @@ export function SignupForm({ onSuccess }: { onSuccess: () => void }) {
                     />
                 </div>
                 <AuthField
-                    label="Work email"
+                    label={t("auth.workEmail")}
                     type="email"
                     autoComplete="email"
                     placeholder="you@company.com"
@@ -68,24 +72,24 @@ export function SignupForm({ onSuccess }: { onSuccess: () => void }) {
                     name="email"
                 />
                 <AuthField
-                    label="Phone number"
+                    label={t("auth.phone")}
                     error={errors.phoneNumber?.message}
                     type="tel"
                     autoComplete="tel"
                     required={false}
-                    placeholder="Optional"
+                    placeholder={t("auth.optional")}
                     {...register("phoneNumber")}
                     name="phoneNumber"
                 />
                 <PasswordInput
-                    label="Password"
+                    label={t("common.password")}
                     autoComplete="new-password"
                     required
                     error={errors.password?.message}
                     {...register("password")}
                 />
                 <PasswordInput
-                    label="Confirm password"
+                    label={t("auth.confirmPassword")}
                     autoComplete="new-password"
                     required
                     error={errors.confirmPassword?.message}
@@ -93,12 +97,12 @@ export function SignupForm({ onSuccess }: { onSuccess: () => void }) {
                 />
                 <FormError message={errors.root?.server?.message} />
                 <AuthSubmit loading={isSubmitting}>
-                    Create account <ArrowRight size={15} />
+                    {t("auth.createButton")} <ArrowRight size={15} />
                 </AuthSubmit>
                 <p className="pt-4 text-center text-xs text-muted-foreground">
-                    Already have an account?{" "}
+                    {t("auth.haveAccount")}{" "}
                     <Link className="font-semibold text-brand-leaf hover:underline" to="/login">
-                        Sign in
+                        {t("common.signIn")}
                     </Link>
                 </p>
             </AuthForm>

@@ -61,7 +61,13 @@ describe("auth forms", () => {
             json(
                 {
                     code: "VALIDATION_ERROR",
-                    errors: [{ field: "email", message: "Email is unavailable." }],
+                    errors: [
+                        {
+                            field: "email",
+                            code: "VALIDATION_EMAIL",
+                            message: "Email is unavailable.",
+                        },
+                    ],
                 },
                 400,
             ),
@@ -70,15 +76,17 @@ describe("auth forms", () => {
         await fillLogin();
         await waitFor(() =>
             expect(screen.getByLabelText("Email address")).toHaveAccessibleDescription(
-                "Email is unavailable.",
+                "Enter a valid email address.",
             ),
         );
     });
     it("reports a failed login without attempting token refresh", async () => {
-        const fetch = mockFetch(() => json({ message: "Wrong email or password" }, 401));
+        const fetch = mockFetch(() =>
+            json({ code: "INVALID_EMAIL_OR_PASSWORD", message: "Wrong email or password" }, 401),
+        );
         const { onSuccess } = mountForm();
         await fillLogin();
-        expect(await screen.findByRole("alert")).toHaveTextContent("Wrong email or password");
+        expect(await screen.findByRole("alert")).toHaveTextContent("Invalid email or password.");
         expect(fetch).toHaveBeenCalledTimes(1);
         expect(onSuccess).not.toHaveBeenCalled();
     });

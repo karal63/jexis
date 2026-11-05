@@ -3,19 +3,23 @@ import { ArrowRight } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
 import { PasswordInput } from "@/shared/ui/password-input";
-import { getApiError } from "@/shared/api/apiError";
 import { useResetPasswordMutation } from "../api/authApi";
 import { applyFormError } from "../model/applyFormError";
-import { resetPasswordSchema, type ResetPasswordValues } from "../model/resetPassword.schema";
+import { createResetPasswordSchema, type ResetPasswordValues } from "../model/resetPassword.schema";
 import { AuthForm, AuthSubmit, FormError } from "./AuthForm";
+import { useI18n } from "@/shared/i18n/useI18n";
+import { useEffect } from "react";
 
 export function ResetPasswordForm({ token, onSuccess }: { token: string; onSuccess: () => void }) {
+    const { t, locale } = useI18n();
     const {
         register,
         handleSubmit,
         setError,
+        clearErrors,
         formState: { errors, isSubmitting },
-    } = useForm<ResetPasswordValues>({ resolver: zodResolver(resetPasswordSchema) });
+    } = useForm<ResetPasswordValues>({ resolver: zodResolver(createResetPasswordSchema(t)) });
+    useEffect(() => clearErrors(), [clearErrors, locale]);
     const [resetPassword] = useResetPasswordMutation();
 
     async function submit({ password }: ResetPasswordValues) {
@@ -23,27 +27,21 @@ export function ResetPasswordForm({ token, onSuccess }: { token: string; onSucce
             await resetPassword({ token, password }).unwrap();
             onSuccess();
         } catch (error) {
-            if (getApiError(error).code === "INVALID_PASSWORD_RESET_TOKEN") {
-                setError("root.server", {
-                    message: "This reset link is invalid or has expired. Request a new one.",
-                });
-            } else {
-                applyFormError(error, setError, ["password"]);
-            }
+            applyFormError(error, setError, ["password"], t);
         }
     }
 
     return (
         <AuthForm onSubmit={handleSubmit(submit)}>
             <PasswordInput
-                label="New password"
+                label={t("auth.newPassword")}
                 autoComplete="new-password"
                 required
                 error={errors.password?.message}
                 {...register("password")}
             />
             <PasswordInput
-                label="Confirm new password"
+                label={t("auth.confirmNewPassword")}
                 autoComplete="new-password"
                 required
                 error={errors.confirmPassword?.message}
@@ -51,15 +49,15 @@ export function ResetPasswordForm({ token, onSuccess }: { token: string; onSucce
             />
             <FormError message={errors.root?.server?.message} />
             <AuthSubmit loading={isSubmitting}>
-                Reset password <ArrowRight size={15} />
+                {t("auth.resetButton")} <ArrowRight size={15} />
             </AuthSubmit>
             <p className="pt-4 text-center text-xs text-muted-foreground">
-                Need a new link?{" "}
+                {t("auth.needLink")}{" "}
                 <Link
                     className="font-semibold text-brand-leaf hover:underline"
                     to="/forgot-password"
                 >
-                    Request one
+                    {t("common.requestOne")}
                 </Link>
             </p>
         </AuthForm>

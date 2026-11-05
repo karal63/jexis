@@ -1,24 +1,31 @@
 import { useForgotPasswordMutation } from "../api/authApi";
-import { forgotPasswordSchema, type ForgotPasswordValues } from "../model/forgotPassword.schema";
+import {
+    createForgotPasswordSchema,
+    type ForgotPasswordValues,
+} from "../model/forgotPassword.schema";
 import { applyFormError } from "../model/applyFormError";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, ArrowRight, MailCheck } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { FormField as AuthField } from "@/shared/ui/form-field";
 import { AuthForm, AuthSubmit, FormError } from "./AuthForm";
+import { useI18n } from "@/shared/i18n/useI18n";
 
 export function ForgotPasswordForm() {
+    const { t, locale } = useI18n();
     const [sent, setSent] = useState(false);
     const {
         register,
         handleSubmit,
         setError,
+        clearErrors,
         formState: { errors, isSubmitting },
     } = useForm<ForgotPasswordValues>({
-        resolver: zodResolver(forgotPasswordSchema),
+        resolver: zodResolver(createForgotPasswordSchema(t)),
     });
+    useEffect(() => clearErrors(), [clearErrors, locale]);
 
     const [forgotPassword] = useForgotPasswordMutation();
     async function submit(values: ForgotPasswordValues) {
@@ -26,7 +33,7 @@ export function ForgotPasswordForm() {
             await forgotPassword(values).unwrap();
             setSent(true);
         } catch (error) {
-            applyFormError(error, setError, ["email"]);
+            applyFormError(error, setError, ["email"], t);
         }
     }
 
@@ -38,30 +45,26 @@ export function ForgotPasswordForm() {
                         <MailCheck size={22} />
                     </span>
                     <h3 className="mt-4 font-display text-xl font-semibold text-foreground">
-                        Check your inbox
+                        {t("auth.checkInbox")}
                     </h3>
-                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                        If there’s an account for that email, we’ve sent a link to reset your
-                        password.
-                    </p>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">{t("auth.sent")}</p>
                     <Link
                         className="mt-5 inline-flex items-center gap-2 text-xs font-semibold text-brand-leaf"
                         to="/login"
                     >
-                        <ArrowLeft size={14} /> Back to sign in
+                        <ArrowLeft size={14} /> {t("common.backToSignIn")}
                     </Link>
                 </div>
             ) : (
                 <>
                     <div className="mb-6">
                         <p className="text-sm leading-6 text-muted-foreground">
-                            Enter the email address you use for Jexis. We’ll send you a link to
-                            reset your password.
+                            {t("auth.forgotHelp")}
                         </p>
                     </div>
                     <AuthForm onSubmit={handleSubmit(submit)}>
                         <AuthField
-                            label="Email address"
+                            label={t("common.email")}
                             type="email"
                             autoComplete="email"
                             placeholder="you@company.com"
@@ -71,14 +74,14 @@ export function ForgotPasswordForm() {
                         />
                         <FormError message={errors.root?.server?.message} />
                         <AuthSubmit loading={isSubmitting}>
-                            Send reset link <ArrowRight size={15} />
+                            {t("auth.sendReset")} <ArrowRight size={15} />
                         </AuthSubmit>
                         <p className="pt-5 text-center text-xs">
                             <Link
                                 className="font-semibold text-brand-leaf hover:underline"
                                 to="/login"
                             >
-                                Back to sign in
+                                {t("common.backToSignIn")}
                             </Link>
                         </p>
                     </AuthForm>
