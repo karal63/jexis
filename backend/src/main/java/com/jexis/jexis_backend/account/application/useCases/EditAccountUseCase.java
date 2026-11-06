@@ -4,12 +4,9 @@ import com.jexis.jexis_backend.stripe.application.useCases.RetrieveAccountByIdUs
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import com.jexis.jexis_backend.account.application.dto.EditAccountDto;
 import com.jexis.jexis_backend.account.domain.entities.Account;
-import com.jexis.jexis_backend.account.domain.exception.AccountNotFoundException;
 import com.jexis.jexis_backend.account.infrastructure.AccountRepository;
-import com.jexis.jexis_backend.common.dtoHelpers.DtoHelper;
-import com.jexis.jexis_backend.user.infrastructure.UserRepository;
+import com.stripe.model.Address;
 
 /**
  * EditAccountUseCase
@@ -22,10 +19,7 @@ import com.jexis.jexis_backend.user.infrastructure.UserRepository;
 @Service
 @RequiredArgsConstructor
 public class EditAccountUseCase {
-    AccountRepository accountRepo;
-    UserRepository userRepo;
-    private final DtoHelper dtoHelper;
-    private final GetAccountUseCase getAccountUseCase;
+    private final AccountRepository accountRepo;
     private final RetrieveAccountByIdUseCase retrieveAccountByIdUseCase;
     private final GetAccountByStripeIdUseCase getAccountByStripeIdUseCase;
 
@@ -43,17 +37,31 @@ public class EditAccountUseCase {
         com.stripe.model.Account stripeAccount = retrieveAccountByIdUseCase.execute(accountId);
         Account dbAccount = getAccountByStripeIdUseCase.execute(stripeAccount.getId());
 
-        dbAccount.setFirstName(stripeAccount.getIndividual().getFirstName());
-        dbAccount.setLastName(stripeAccount.getIndividual().getLastName());
-        dbAccount.setCity(stripeAccount.getCompany().getAddress().getCity());
-        dbAccount.setCountry(stripeAccount.getCompany().getAddress().getCountry());
-        dbAccount.setLine1(stripeAccount.getCompany().getAddress().getLine1());
-        dbAccount.setLine2(stripeAccount.getCompany().getAddress().getLine2());
-        dbAccount.setPostalCode(stripeAccount.getCompany().getAddress().getPostalCode());
-        dbAccount.setState(stripeAccount.getCompany().getAddress().getState());
-        dbAccount.setPhone(stripeAccount.getCompany().getPhone());
+        String businessType = stripeAccount.getBusinessType();
+        Address address;
+        if ("individual".equals(businessType)) {
+            dbAccount.setFirstName(stripeAccount.getIndividual().getFirstName());
+            dbAccount.setLastName(stripeAccount.getIndividual().getLastName());
+            address = stripeAccount.getIndividual().getAddress();
+            dbAccount.setPhone(stripeAccount.getIndividual().getPhone());
+        } else if ("company".equals(businessType)
+                || "non_profit".equals(businessType)
+                || "government_entity".equals(businessType)) {
+            dbAccount.setFirstName(stripeAccount.getCompany().getName());
+            dbAccount.setLastName(stripeAccount.getBusinessProfile().getName());
+            address = stripeAccount.getCompany().getAddress();
+            dbAccount.setPhone(stripeAccount.getCompany().getPhone());
+        } else {
+            return;
+        }
+        dbAccount.setCity(address.getCity());
+        dbAccount.setCountry(address.getCountry());
+        dbAccount.setLine1(address.getLine1());
+        dbAccount.setLine2(address.getLine2());
+        dbAccount.setPostalCode(address.getPostalCode());
+        dbAccount.setState(address.getState());
         dbAccount.setEmail(stripeAccount.getEmail());
 
-        Account newAccount = accountRepo.save(dbAccount);
+        accountRepo.save(dbAccount);
     }
 }

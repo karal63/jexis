@@ -3,7 +3,7 @@ package com.jexis.jexis_backend.user.domain;
 import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 
-/** Validation and canonical storage values shared by user creation, editing, and phone preflight. */
+/** Validation and canonical storage values shared by user creation, editing, and the phone migration. */
 public final class ProfileInputNormalizer {
     private ProfileInputNormalizer() {}
 

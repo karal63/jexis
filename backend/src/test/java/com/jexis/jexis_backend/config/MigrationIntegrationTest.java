@@ -198,10 +198,6 @@ class MigrationIntegrationTest {
         jdbc.update("UPDATE users SET phone_number = '+48 (512) 345-678' WHERE id = ?", first);
         jdbc.update("INSERT INTO users (id, first_name, last_name, email, phone_number, password, is_activated, is_deleted, created_at) VALUES (?, 'Test', 'User', 'second@example.com', '+48512345678', 'hashed', false, false, now())", second);
         jdbc.update("INSERT INTO users (id, first_name, last_name, email, phone_number, password, is_activated, is_deleted, created_at) VALUES (?, 'Test', 'User', 'invalid@example.com', '512345678', 'hashed', false, false, now())", invalid);
-        try (var connection = dataSource.getConnection()) {
-            var audit = com.jexis.jexis_backend.user.infrastructure.PhonePreflight.audit(connection);
-            assertThat(audit.problems()).hasSize(2);
-        }
         assertThatThrownBy(() -> flyway.migrate()).hasStackTraceContaining(first.toString()).hasStackTraceContaining(second.toString()).hasStackTraceContaining(invalid.toString());
         assertThat(jdbc.queryForObject("SELECT phone_number FROM users WHERE id = ?", String.class, first)).isEqualTo("+48 (512) 345-678");
         assertThat(jdbc.queryForObject("SELECT count(*) FROM pg_constraint WHERE conrelid = 'users'::regclass AND conname = 'users_phone_number_key'", Integer.class)).isEqualTo(1);
