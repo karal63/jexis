@@ -4,8 +4,6 @@ import com.jexis.jexis_backend.common.validation.ValidPassword;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 
 /**
  * SignupDto
@@ -18,14 +16,11 @@ import jakarta.validation.constraints.Size;
  */
 public class SignupDto {
     @NotBlank(message = "First name cannot be blank")
-    @Size(min = 1, max = 100, message = "First name must be between 1 and 100 characters")
     private String firstName;
 
     @NotBlank(message = "Last name cannot be blank")
-    @Size(min = 1, max = 100, message = "Last name must be between 1 and 100 characters")
     private String lastName;
 
-    @Pattern(regexp = "^[\\d+\\-()\\s]*$", message = "Invalid phone format")
     private String phoneNumber;
 
     @NotBlank(message = "Email cannot be blank")

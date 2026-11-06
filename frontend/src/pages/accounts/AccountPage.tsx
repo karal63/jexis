@@ -1,6 +1,6 @@
 import { ArrowLeft, Building2 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
-import { accountName, useAccountQuery } from "@/features/accounts/api/accountsApi";
+import { accountName, useAccountQuery } from "@/features/accounts";
 import { getApiError } from "@/shared/api/apiError";
 import { Button } from "@/shared/ui/button";
 import { useI18n } from "@/shared/i18n/useI18n";

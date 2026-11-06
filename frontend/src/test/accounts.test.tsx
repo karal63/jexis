@@ -64,9 +64,9 @@ describe("all accounts", () => {
 
         await userEvent.click(await screen.findByRole("link", { name: "Settings" }));
         expect(await screen.findByRole("heading", { name: "Settings" })).toBeInTheDocument();
+        await userEvent.click(screen.getByRole("tab", { name: "Appearance" }));
         expect(screen.getByRole("heading", { name: "Preferences" })).toBeInTheDocument();
         expect(screen.getByRole("heading", { name: "Currency" })).toBeInTheDocument();
-        expect(screen.getByText("Appearance")).toBeInTheDocument();
         expect(screen.getByText("Language")).toBeInTheDocument();
         expect(screen.getByText("USD")).toBeInTheDocument();
 

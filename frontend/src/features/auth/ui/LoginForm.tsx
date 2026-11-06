@@ -1,7 +1,7 @@
 import { useLoginMutation } from "../api/authApi";
 import { PasswordInput } from "@/shared/ui/password-input";
 import { createLoginSchema, type LoginValues } from "../model/login.schema";
-import { applyFormError } from "../model/applyFormError";
+import { applyFormError } from "@/shared/forms/applyFormError";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";

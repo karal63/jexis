@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Building2, ChevronRight, Cog, Leaf, LogOut, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useLogoutMutation } from "@/features/auth";
-import { accountName, useMyAccountsQuery } from "@/features/accounts/api/accountsApi";
+import { accountName, useMyAccountsQuery } from "@/features/accounts";
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import { sessionEnded } from "@/shared/api/sessionEvents";
 import { getApiError } from "@/shared/api/apiError";

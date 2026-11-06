@@ -3,14 +3,11 @@ package com.jexis.jexis_backend.user.application.useCases;
 import java.security.SecureRandom;
 import java.util.HexFormat;
 import java.util.List;
-import java.util.Optional;
-import java.util.Random;
 
 import com.jexis.jexis_backend.common.hashUtils.HashUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.jexis.jexis_backend.common.logging.AsyncLogger;
 import com.jexis.jexis_backend.user.application.dto.CreateDto;
@@ -19,6 +16,8 @@ import com.jexis.jexis_backend.user.domain.enums.UserRole;
 import com.jexis.jexis_backend.user.domain.exceptions.EmailExistsException;
 import com.jexis.jexis_backend.user.domain.exceptions.PhoneNumberExistsException;
 import com.jexis.jexis_backend.user.infrastructure.UserRepository;
+import com.jexis.jexis_backend.user.infrastructure.UserWriteTransactions;
+import com.jexis.jexis_backend.user.domain.ProfileInputNormalizer;
 
 /**
  * CreateUserUseCase
@@ -34,6 +33,7 @@ import com.jexis.jexis_backend.user.infrastructure.UserRepository;
 @RequiredArgsConstructor
 public class CreateUserUseCase {
     private final UserRepository repo;
+    private final UserWriteTransactions writes;
     private final AsyncLogger logger;
     private final Argon2PasswordEncoder argon = new Argon2PasswordEncoder(16, 32, 1, 60000, 10);
     private final SecureRandom RANDOM = new SecureRandom();
@@ -49,34 +49,31 @@ public class CreateUserUseCase {
      * 
      * @return a {@link User} containing the new user
      */
-    @Transactional
     public User execute(CreateDto body, List<UserRole> roles) {
-        logger.info("USER", "Creating user for email: " + body.getEmail());
+        return writes.execute(() -> {
+            String firstName = ProfileInputNormalizer.name(body.getFirstName(), "firstName");
+            String lastName = ProfileInputNormalizer.name(body.getLastName(), "lastName");
+            logger.info("USER", "Creating user for email: " + body.getEmail());
 
-        Optional<User> existingUser = repo.findByEmailOrPhoneNumber(body.getEmail(), body.getPhoneNumber());
+            String phoneNumber = ProfileInputNormalizer.phone(body.getPhoneNumber());
+            if (repo.findByEmail(body.getEmail()).isPresent()) throw new EmailExistsException();
+            if (phoneNumber != null && repo.existsByPhoneNumber(phoneNumber)) throw new PhoneNumberExistsException();
 
-        if (existingUser.isPresent()) {
-            if (existingUser.get().getEmail().equals(body.getEmail())) {
-                throw new EmailExistsException();
-            } else if (existingUser.get().getPhoneNumber().equals(body.getPhoneNumber())) {
-                throw new PhoneNumberExistsException();
-            }
-        }
+            byte[] bytes = new byte[32]; // 256 bits
+            RANDOM.nextBytes(bytes);
+            String activationToken = HexFormat.of().formatHex(bytes);
+            String hashedActivationLink = HashUtils.sha256(activationToken);
 
-        byte[] bytes = new byte[32]; // 256 bits
-        RANDOM.nextBytes(bytes);
-        String activationToken = HexFormat.of().formatHex(bytes);
-        String hashedActivationLink = HashUtils.sha256(activationToken);
+            String hashedPassword = argon.encode(body.getPassword());
 
-        String hashedPassword = argon.encode(body.getPassword());
+            User savedUser = repo
+                    .saveAndFlush(new User(firstName, lastName, body.getEmail(), phoneNumber,
+                            hashedPassword, hashedActivationLink, roles));
 
-        User savedUser = repo
-                .save(new User(body.getFirstName(), body.getLastName(), body.getEmail(), body.getPhoneNumber(),
-                        hashedPassword, hashedActivationLink, roles));
+            sendActivationLinkUseCase.execute(savedUser, activationToken);
 
-        sendActivationLinkUseCase.execute(savedUser, activationToken);
-
-        logger.info("USER", "User created successfully: " + savedUser.getEmail());
-        return savedUser;
+            logger.info("USER", "User created successfully: " + savedUser.getEmail());
+            return savedUser;
+        });
     }
 }

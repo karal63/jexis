@@ -1,3 +1,4 @@
+import { createProfileFields } from "@/shared/forms/profileFields";
 import { z } from "zod";
 import type { SignupRequest } from "../api/auth.types";
 import { passwordSchema } from "./password.schema";
@@ -5,21 +6,8 @@ import { en, type Translator } from "@/shared/i18n/en";
 export const createSignupSchema = (t: Translator) =>
     z
         .object({
-            firstName: z
-                .string()
-                .trim()
-                .min(1, t("validation.firstRequired"))
-                .max(100, t("validation.firstMax")),
-            lastName: z
-                .string()
-                .trim()
-                .min(1, t("validation.lastRequired"))
-                .max(100, t("validation.lastMax")),
+            ...createProfileFields(t),
             email: z.email(t("validation.email")),
-            phoneNumber: z
-                .string()
-                .trim()
-                .regex(/^[\d+\-()\s]*$/, t("validation.phone")),
             password: passwordSchema(t),
             confirmPassword: z.string(),
         })

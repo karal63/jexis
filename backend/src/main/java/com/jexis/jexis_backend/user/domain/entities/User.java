@@ -27,7 +27,7 @@ import jakarta.persistence.*;
  * Author: Leo
  */
 @Entity
-@Table(name = "users")
+@Table(name = "users", uniqueConstraints = @jakarta.persistence.UniqueConstraint(name = "uk_users_phone_number", columnNames = "phone_number"))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -45,7 +45,7 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "phone_number")
     private String phoneNumber;
 
     @Column(nullable = false)

@@ -2,7 +2,7 @@ import { useSignupMutation } from "../api/authApi";
 import { toSignupRequest } from "../model/signup.schema";
 import { PasswordInput } from "@/shared/ui/password-input";
 import { createSignupSchema, type SignupValues } from "../model/signup.schema";
-import { applyFormError } from "../model/applyFormError";
+import { applyFormError } from "@/shared/forms/applyFormError";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -75,6 +75,8 @@ export function SignupForm({ onSuccess }: { onSuccess: () => void }) {
                     label={t("auth.phone")}
                     error={errors.phoneNumber?.message}
                     type="tel"
+                    maxLength={64}
+                    hint={t("validation.phoneHint")}
                     autoComplete="tel"
                     required={false}
                     placeholder={t("auth.optional")}

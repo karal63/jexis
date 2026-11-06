@@ -18,6 +18,7 @@ repositories {
 }
 
 dependencies {
+    implementation 'com.googlecode.libphonenumber:libphonenumber:9.0.19'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
@@ -87,4 +88,10 @@ tasks.register('rateLimitIntegrationTest', Test) {
             throw new GradleException('Set TEST_REDIS_URI to a disposable Redis instance.')
         }
     }
+}
+
+tasks.register('phonePreflight', JavaExec) {
+    description = 'Read-only validation of existing user phones. Uses TEST_DATABASE_URL/USERNAME/PASSWORD.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.jexis.jexis_backend.user.infrastructure.PhonePreflight'
 }

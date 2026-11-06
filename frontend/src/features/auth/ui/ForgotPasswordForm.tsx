@@ -3,7 +3,7 @@ import {
     createForgotPasswordSchema,
     type ForgotPasswordValues,
 } from "../model/forgotPassword.schema";
-import { applyFormError } from "../model/applyFormError";
+import { applyFormError } from "@/shared/forms/applyFormError";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, ArrowRight, MailCheck } from "lucide-react";

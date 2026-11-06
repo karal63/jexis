@@ -1,142 +1,162 @@
-import { ArrowLeft, CircleDollarSign, Globe2, Leaf, SunMoon } from "lucide-react";
+import {
+    ArrowLeft,
+    CreditCard,
+    KeyRound,
+    Leaf,
+    MonitorSmartphone,
+    SunMoon,
+    UserRound,
+} from "lucide-react";
+import { useRef, useState, type KeyboardEvent } from "react";
 import { Link } from "react-router-dom";
-import { useAppDispatch, useAppSelector } from "@/app/hooks";
-import { setTheme, type Theme } from "@/features/theme/store/themeSlice";
-import type { Locale } from "@/shared/i18n/en";
+import { useAppSelector } from "@/app/hooks";
 import { useI18n } from "@/shared/i18n/useI18n";
-
-const DEFAULT_CURRENCY = "USD";
+import { cn } from "@/shared/lib/utils";
+import { PersonalInfoForm } from "@/features/profile";
+import { AppearanceSettings } from "./AppearanceSettings";
+import { PasswordSettings } from "./PasswordSettings";
+const SETTINGS_TABS = [
+    { id: "profile", label: "settings.publicProfile", Icon: UserRound, Panel: PersonalInfoForm },
+    { id: "appearance", label: "settings.appearanceTab", Icon: SunMoon, Panel: AppearanceSettings },
+    { id: "password", label: "settings.passwordTab", Icon: KeyRound, Panel: PasswordSettings },
+] as const;
+type SettingsTab = (typeof SETTINGS_TABS)[number]["id"];
+const tabOrder = SETTINGS_TABS.map((tab) => tab.id);
 
 export default function SettingsPage() {
-    const { t, locale, setLocale } = useI18n();
-    const theme = useAppSelector((state) => state.theme.theme);
-    const dispatch = useAppDispatch();
+    const { t } = useI18n();
+    const user = useAppSelector((state) => state.session.user);
+    const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
+    const tabRefs = useRef<Partial<Record<SettingsTab, HTMLButtonElement | null>>>({});
+
+    function handleTabKeyDown(event: KeyboardEvent<HTMLButtonElement>, tab: SettingsTab) {
+        const currentIndex = tabOrder.indexOf(tab);
+        let nextIndex: number;
+        switch (event.key) {
+            case "ArrowRight":
+            case "ArrowDown":
+                nextIndex = (currentIndex + 1) % tabOrder.length;
+                break;
+            case "ArrowLeft":
+            case "ArrowUp":
+                nextIndex = (currentIndex - 1 + tabOrder.length) % tabOrder.length;
+                break;
+            case "Home":
+                nextIndex = 0;
+                break;
+            case "End":
+                nextIndex = tabOrder.length - 1;
+                break;
+            default:
+                return;
+        }
+        event.preventDefault();
+        const nextTab = tabOrder[nextIndex];
+        setActiveTab(nextTab);
+        tabRefs.current[nextTab]?.focus();
+    }
+
+    const unavailableTabs = [
+        { label: t("settings.billingTab"), Icon: CreditCard },
+        { label: t("settings.sessionsTab"), Icon: MonitorSmartphone },
+    ];
 
     return (
-        <main className="flex min-h-dvh flex-col items-center bg-card px-5 pb-8 text-foreground">
-            <Link
-                to="/app"
-                className="mt-[6vh] inline-flex items-center gap-2 font-display text-2xl font-bold tracking-[-.08em]"
-                aria-label={t("accounts.allAccounts")}
-            >
-                <span className="grid size-7 place-items-center">
-                    <Leaf size={18} strokeWidth={2.5} />
-                </span>
-                jexis
-            </Link>
+        <main className="min-h-dvh bg-card px-5 pb-12 text-foreground sm:px-8">
+            <div className="mx-auto w-full max-w-[1200px]">
+                <header className="flex items-center justify-between gap-4 pt-5 sm:pt-6">
+                    <Link
+                        to="/app"
+                        className="inline-flex items-center gap-2 font-display text-2xl font-bold tracking-[-.08em]"
+                        aria-label={t("accounts.allAccounts")}
+                    >
+                        <span className="grid size-7 place-items-center">
+                            <Leaf size={18} strokeWidth={2.5} />
+                        </span>
+                        jexis
+                    </Link>
+                    <Link
+                        to="/app"
+                        className="inline-flex items-center gap-2 text-xs font-semibold text-brand-leaf hover:underline"
+                    >
+                        <ArrowLeft aria-hidden="true" size={14} />
+                        {t("accounts.allAccounts")}
+                    </Link>
+                </header>
 
-            <div className="mt-[clamp(52px,10vh,112px)] w-full max-w-[760px] pb-10">
-                <Link
-                    to="/app"
-                    className="inline-flex items-center gap-2 text-xs font-semibold text-brand-leaf hover:underline"
-                >
-                    <ArrowLeft aria-hidden="true" size={14} />
-                    {t("accounts.allAccounts")}
-                </Link>
-                <h1 className="mt-7 font-display text-[27px] font-bold tracking-[-.045em]">
-                    {t("settings.title")}
-                </h1>
-                <p className="mt-2 text-sm text-muted-foreground">{t("settings.intro")}</p>
+                <div className="mt-8 pb-10 sm:mt-10">
+                    <h1 className="font-display text-[27px] font-bold tracking-[-.045em]">
+                        {t("settings.title")}
+                    </h1>
+                    <p className="mt-2 text-sm text-muted-foreground">{t("settings.intro")}</p>
 
-                <div className="mt-10 space-y-10">
-                    <section aria-labelledby="preferences-heading">
-                        <h2 id="preferences-heading" className="font-display text-lg font-bold">
-                            {t("settings.preferences")}
-                        </h2>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            {t("settings.preferencesDescription")}
-                        </p>
-                        <div className="mt-4 divide-y divide-border rounded-lg border border-border">
-                            <div className="flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center">
-                                <div className="flex min-w-0 flex-1 items-start gap-4">
-                                    <SunMoon
-                                        aria-hidden="true"
-                                        size={18}
-                                        className="shrink-0 text-brand-leaf"
-                                    />
-                                    <div className="min-w-0">
-                                        <label
-                                            htmlFor="theme-select"
-                                            className="text-sm font-semibold"
-                                        >
-                                            {t("home.appearance")}
-                                        </label>
-                                        <p className="mt-1 text-xs text-muted-foreground">
-                                            {t("settings.appearanceDescription")}
-                                        </p>
-                                    </div>
-                                </div>
-                                <select
-                                    id="theme-select"
-                                    value={theme}
-                                    onChange={(event) =>
-                                        dispatch(setTheme(event.target.value as Theme))
-                                    }
-                                    className="min-h-10 w-full rounded-md border border-border bg-card px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-40"
-                                >
-                                    <option value="system">{t("home.system")}</option>
-                                    <option value="light">{t("home.light")}</option>
-                                    <option value="dark">{t("home.dark")}</option>
-                                </select>
+                    <div className="mt-6 grid min-w-0 gap-8 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-12">
+                        <div className="flex min-w-0 gap-2 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible">
+                            <div
+                                role="tablist"
+                                aria-label={t("settings.sections")}
+                                className="flex shrink-0 gap-2 lg:w-full lg:flex-col"
+                            >
+                                {SETTINGS_TABS.map(({ id, label, Icon }) => (
+                                    <button
+                                        key={id}
+                                        ref={(element) => {
+                                            tabRefs.current[id] = element;
+                                        }}
+                                        id={`settings-tab-${id}`}
+                                        type="button"
+                                        role="tab"
+                                        aria-selected={activeTab === id}
+                                        aria-controls={`settings-panel-${id}`}
+                                        tabIndex={activeTab === id ? 0 : -1}
+                                        onClick={() => setActiveTab(id)}
+                                        onKeyDown={(event) => handleTabKeyDown(event, id)}
+                                        className={cn(
+                                            "flex min-h-11 shrink-0 items-center gap-3 rounded-lg px-4 text-left text-sm font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring lg:w-full",
+                                            activeTab === id
+                                                ? "bg-accent text-brand-leaf"
+                                                : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+                                        )}
+                                    >
+                                        <Icon aria-hidden="true" size={18} className="shrink-0" />
+                                        {t(label)}
+                                    </button>
+                                ))}
                             </div>
-                            <div className="flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center">
-                                <div className="flex min-w-0 flex-1 items-start gap-4">
-                                    <Globe2
-                                        aria-hidden="true"
-                                        size={18}
-                                        className="shrink-0 text-brand-leaf"
-                                    />
-                                    <div className="min-w-0">
-                                        <label
-                                            htmlFor="language-select"
-                                            className="text-sm font-semibold"
-                                        >
-                                            {t("language.label")}
-                                        </label>
-                                        <p className="mt-1 text-xs text-muted-foreground">
-                                            {t("settings.languageDescription")}
-                                        </p>
-                                    </div>
-                                </div>
-                                <select
-                                    id="language-select"
-                                    value={locale}
-                                    onChange={(event) => setLocale(event.target.value as Locale)}
-                                    className="min-h-10 w-full rounded-md border border-border bg-card px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-40"
-                                >
-                                    <option value="en">{t("language.en")}</option>
-                                    <option value="pl">{t("language.pl")}</option>
-                                </select>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section aria-labelledby="currency-heading">
-                        <h2 id="currency-heading" className="font-display text-lg font-bold">
-                            {t("settings.currencySection")}
-                        </h2>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            {t("settings.currencySectionDescription")}
-                        </p>
-                        <div className="mt-4 flex items-center gap-4 rounded-lg border border-border px-5 py-5">
-                            <CircleDollarSign
+                            <div
                                 aria-hidden="true"
-                                size={18}
-                                className="shrink-0 text-brand-leaf"
+                                className="mx-1 hidden border-t border-border lg:block"
                             />
-                            <div className="min-w-0 flex-1">
-                                <h3 className="text-sm font-semibold">
-                                    {t("settings.defaultCurrency")}
-                                </h3>
-                                <p className="mt-1 text-xs text-muted-foreground">
-                                    {t("settings.currencyDescription")}
-                                </p>
+                            <div className="flex shrink-0 gap-2 lg:w-full lg:flex-col">
+                                {unavailableTabs.map(({ label, Icon }) => (
+                                    <button
+                                        key={label}
+                                        type="button"
+                                        disabled
+                                        className="flex min-h-11 shrink-0 cursor-not-allowed items-center gap-3 rounded-lg px-4 text-left text-sm text-muted-foreground opacity-50 lg:w-full"
+                                    >
+                                        <Icon aria-hidden="true" size={18} className="shrink-0" />
+                                        {label}
+                                    </button>
+                                ))}
                             </div>
-                            <span className="shrink-0 rounded-md border border-border bg-secondary px-3 py-1.5 text-sm font-semibold">
-                                {DEFAULT_CURRENCY}
-                            </span>
                         </div>
-                    </section>
+
+                        <div className="min-w-0">
+                            {SETTINGS_TABS.map(({ id, Panel }) => (
+                                <div
+                                    key={id}
+                                    id={`settings-panel-${id}`}
+                                    role="tabpanel"
+                                    aria-labelledby={`settings-tab-${id}`}
+                                    tabIndex={0}
+                                    hidden={activeTab !== id}
+                                >
+                                    <Panel key={user?.id ?? "anonymous"} />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
