@@ -93,6 +93,12 @@ export const pl: Record<TranslationKey, string> = {
     "home.signingOut": "Wylogowywanie…",
     "accounts.intro": "Wybierz konto, aby kontynuować.",
     "accounts.allAccounts": "Wszystkie konta",
+    "accounts.create": "Utwórz konto",
+    "accounts.creating": "Tworzenie konta…",
+    "accounts.createConfirmTitle": "Utworzyć nowe konto?",
+    "accounts.createConfirmDescription":
+        "Nowe konto firmowe zostanie utworzone z Twoim adresem e-mail. Będziesz jego właścicielem, a konto będzie korzystać z bezpłatnego planu.",
+    "accounts.cancelCreate": "Anuluj",
     "accounts.searchLabel": "Szukaj kont",
     "accounts.searchPlaceholder": "Szukaj po nazwie lub adresie e-mail",
     "accounts.loading": "Ładowanie kont…",

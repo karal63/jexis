@@ -1,16 +1,21 @@
 import { useEffect, useState } from "react";
-import { Building2, ChevronRight, Cog, Leaf, LogOut, Search } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Building2, ChevronRight, Cog, Leaf, LogOut, Plus, Search } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { useLogoutMutation } from "@/features/auth";
-import { accountName, useMyAccountsQuery } from "@/features/accounts";
+import { accountName, useCreateAccountMutation, useMyAccountsQuery } from "@/features/accounts";
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import { sessionEnded } from "@/shared/api/sessionEvents";
 import { getApiError } from "@/shared/api/apiError";
 import { Button } from "@/shared/ui/button";
+import { Dialog } from "@/shared/ui/dialog";
 import { useI18n } from "@/shared/i18n/useI18n";
 
 export default function AllAccountsPage() {
     const { t } = useI18n();
+    const navigate = useNavigate();
+    const [createAccount, { isLoading: creatingAccount, error: createError, reset: resetCreate }] =
+        useCreateAccountMutation();
+    const [confirmingCreate, setConfirmingCreate] = useState(false);
     const user = useAppSelector((state) => state.session.user);
     const dispatch = useAppDispatch();
     const [logout, { isLoading: signingOut }] = useLogoutMutation();
@@ -44,6 +49,22 @@ export default function AllAccountsPage() {
         }
     }
 
+    async function handleCreateAccount() {
+        if (creatingAccount || !confirmingCreate) return;
+        try {
+            const account = await createAccount().unwrap();
+            navigate(`/app/accounts/${account.id}`);
+        } catch {
+            // Keep the dialog open so the user can retry or cancel.
+        }
+    }
+
+    function closeCreateDialog() {
+        if (creatingAccount) return;
+        setConfirmingCreate(false);
+        resetCreate();
+    }
+
     const accounts = data?.items ?? [];
     const userName =
         [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() || user?.email || "";
@@ -69,15 +90,26 @@ export default function AllAccountsPage() {
                 className="mt-[clamp(52px,10vh,112px)] w-full max-w-[460px] pb-10"
                 aria-labelledby="accounts-heading"
             >
-                <div className="text-center">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                     <h1
                         id="accounts-heading"
                         className="font-display text-[27px] font-bold tracking-[-.045em]"
                     >
                         {t("accounts.allAccounts")}
                     </h1>
-                    <p className="mt-2 text-sm text-muted-foreground">{t("accounts.intro")}</p>
+                    <Button
+                        variant="secondary"
+                        size="small"
+                        className="shrink-0 text-brand-leaf"
+                        onClick={() => setConfirmingCreate(true)}
+                        disabled={creatingAccount || signingOut}
+                        aria-busy={creatingAccount}
+                    >
+                        <Plus aria-hidden="true" size={15} />
+                        {t(creatingAccount ? "accounts.creating" : "accounts.create")}
+                    </Button>
                 </div>
+                <p className="mt-2 text-sm text-muted-foreground">{t("accounts.intro")}</p>
 
                 <div role="search" className="relative mt-9">
                     <label htmlFor="account-search" className="sr-only">
@@ -217,7 +249,7 @@ export default function AllAccountsPage() {
                     <button
                         type="button"
                         onClick={signOut}
-                        disabled={signingOut}
+                        disabled={signingOut || creatingAccount}
                         className="inline-flex min-h-9 shrink-0 items-center gap-2 rounded-md px-2.5 text-xs font-semibold text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
                     >
                         <LogOut aria-hidden="true" size={14} />
@@ -233,6 +265,41 @@ export default function AllAccountsPage() {
                     </Link>
                 </div>
             </footer>
+            {confirmingCreate && (
+                <Dialog
+                    title={t("accounts.createConfirmTitle")}
+                    description={t("accounts.createConfirmDescription")}
+                    onClose={closeCreateDialog}
+                    alert
+                >
+                    {creatingAccount && (
+                        <p role="status" className="mt-4 text-sm text-muted-foreground">
+                            {t("accounts.creating")}
+                        </p>
+                    )}
+                    {createError && (
+                        <p role="alert" className="mt-4 text-sm text-danger">
+                            {getApiError(createError, t).message}
+                        </p>
+                    )}
+                    <div className="mt-6 flex flex-wrap justify-end gap-3">
+                        <Button
+                            variant="secondary"
+                            onClick={closeCreateDialog}
+                            disabled={creatingAccount}
+                        >
+                            {t("accounts.cancelCreate")}
+                        </Button>
+                        <Button
+                            onClick={handleCreateAccount}
+                            disabled={creatingAccount}
+                            aria-busy={creatingAccount}
+                        >
+                            {t(creatingAccount ? "accounts.creating" : "accounts.create")}
+                        </Button>
+                    </div>
+                </Dialog>
+            )}
         </main>
     );
 }

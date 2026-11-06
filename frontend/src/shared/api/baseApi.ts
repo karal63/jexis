@@ -61,5 +61,6 @@ export function createBaseQuery(): BaseQueryFn<string | FetchArgs, unknown, Fetc
 export const baseApi = createApi({
     reducerPath: "api",
     baseQuery: createBaseQuery(),
+    tagTypes: ["Accounts"],
     endpoints: () => ({}),
 });

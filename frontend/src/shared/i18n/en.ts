@@ -94,6 +94,12 @@ export const en = {
     "home.signingOut": "Signing out…",
     "accounts.intro": "Choose an account to continue.",
     "accounts.allAccounts": "All accounts",
+    "accounts.create": "Create account",
+    "accounts.creating": "Creating account…",
+    "accounts.createConfirmTitle": "Create a new account?",
+    "accounts.createConfirmDescription":
+        "A new business account will be created using your email address. You will be its owner and it will start on the free plan.",
+    "accounts.cancelCreate": "Cancel",
     "accounts.searchLabel": "Search accounts",
     "accounts.searchPlaceholder": "Search by name or email",
     "accounts.loading": "Loading your accounts…",

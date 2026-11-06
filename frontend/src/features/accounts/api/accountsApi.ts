@@ -9,6 +9,11 @@ export const accountsApi = baseApi.injectEndpoints({
                 url: "/accounts/me",
                 params: { page, pageSize: 12, ...(search ? { search } : {}) },
             }),
+            providesTags: ["Accounts"],
+        }),
+        createAccount: builder.mutation<Account, void>({
+            query: () => ({ url: "/accounts/create", method: "POST" }),
+            invalidatesTags: (_result, error) => (error ? [] : ["Accounts"]),
         }),
         account: builder.query<Account, string>({
             query: (id) => `/accounts/${id}`,
@@ -16,4 +21,4 @@ export const accountsApi = baseApi.injectEndpoints({
     }),
 });
 
-export const { useMyAccountsQuery, useAccountQuery } = accountsApi;
+export const { useMyAccountsQuery, useAccountQuery, useCreateAccountMutation } = accountsApi;
