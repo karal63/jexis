@@ -66,7 +66,8 @@ export function getFieldErrorMessage(
                   : "validation.required",
         );
     if (code === "VALIDATION_EMAIL") return t("validation.email");
-    if (code === "VALIDATION_PATTERN" && field === "phoneNumber") return t("validation.phone");
+    if ((code === "VALIDATION_PATTERN" || code === "VALIDATION_PHONE") && field === "phoneNumber")
+        return t("validation.phone");
     if (code === "VALIDATION_SIZE")
         return t(
             field === "password"

@@ -18,6 +18,7 @@ repositories {
 }
 
 dependencies {
+    implementation 'com.googlecode.libphonenumber:libphonenumber:9.0.19'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'

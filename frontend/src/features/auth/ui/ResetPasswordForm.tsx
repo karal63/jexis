@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
 import { PasswordInput } from "@/shared/ui/password-input";
 import { useResetPasswordMutation } from "../api/authApi";
-import { applyFormError } from "../model/applyFormError";
+import { applyFormError } from "@/shared/forms/applyFormError";
 import { createResetPasswordSchema, type ResetPasswordValues } from "../model/resetPassword.schema";
 import { AuthForm, AuthSubmit, FormError } from "./AuthForm";
 import { useI18n } from "@/shared/i18n/useI18n";

@@ -3,7 +3,6 @@ package com.jexis.jexis_backend.common.web.error;
 import com.jexis.jexis_backend.common.ratelimit.RateLimitException;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import com.jexis.jexis_backend.common.validation.ValidationError;
 import com.jexis.jexis_backend.common.validation.ValidationErrorResponse;
@@ -63,6 +62,12 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(400, "INVALID_REQUEST_PARAMETER", "A required request parameter is missing or invalid"));
     }
 
+    @ExceptionHandler(com.jexis.jexis_backend.user.domain.ProfileValidationException.class)
+    public ResponseEntity<ValidationErrorResponse> handleProfile(com.jexis.jexis_backend.user.domain.ProfileValidationException ex) {
+        return ResponseEntity.badRequest().body(new ValidationErrorResponse(400, "VALIDATION_ERROR", "Validation error",
+            List.of(new ValidationError(ex.field(), ex.code(), ex.getMessage()))));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleServerError(Exception ex) {
         log.error("Unhandled request failure", ex);
@@ -79,7 +84,7 @@ public class GlobalExceptionHandler {
                 .stream()
                 .map(error -> new ValidationError(
                         error.getField(),
-                        "VALIDATION_" + (error.getCode() == null ? "INVALID" : error.getCode().toUpperCase(Locale.ROOT)),
+                        validationCode(error.getCode()),
                         error.getDefaultMessage()))
                 .toList();
 
@@ -89,6 +94,16 @@ public class GlobalExceptionHandler {
                         "VALIDATION_ERROR",
                         "Validation error",
                         errors));
+    }
+
+    private static String validationCode(String constraint) {
+        if (constraint == null) return "VALIDATION_INVALID";
+        return switch (constraint) {
+            case "NotBlank" -> "VALIDATION_NOT_BLANK";
+            case "NotNull" -> "VALIDATION_NOT_NULL";
+            case "NotEmpty" -> "VALIDATION_NOT_EMPTY";
+            default -> "VALIDATION_" + constraint.toUpperCase(Locale.ROOT);
+        };
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

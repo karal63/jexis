@@ -1,4 +1,11 @@
-import { combineReducers, configureStore, type UnknownAction } from "@reduxjs/toolkit";
+import { sessionReceived } from "@/features/auth/model/sessionSlice";
+import { authApi } from "@/features/auth/api/authApi";
+import {
+    combineReducers,
+    configureStore,
+    createListenerMiddleware,
+    type UnknownAction,
+} from "@reduxjs/toolkit";
 import { setupListeners } from "@reduxjs/toolkit/query";
 import themeReducer from "@/features/theme";
 import sessionReducer from "@/features/auth/model/sessionSlice";
@@ -12,6 +19,13 @@ const reducer = combineReducers({
 });
 
 export function createAppStore() {
+    const listener = createListenerMiddleware<ReturnType<typeof reducer>>();
+    listener.startListening({
+        actionCreator: sessionReceived,
+        effect: (action, api) => {
+            api.dispatch(authApi.util.upsertQueryData("currentUser", undefined, action.payload));
+        },
+    });
     return configureStore({
         reducer: (state: ReturnType<typeof reducer> | undefined, action: UnknownAction) => {
             // Remove every cached user resource when a session ends.
@@ -19,7 +33,8 @@ export function createAppStore() {
                 state = { ...state, api: baseApi.reducer(undefined, { type: "@@init" }) };
             return reducer(state, action);
         },
-        middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(baseApi.middleware),
+        middleware: (getDefaultMiddleware) =>
+            getDefaultMiddleware().prepend(listener.middleware).concat(baseApi.middleware),
     });
 }
 

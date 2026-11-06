@@ -29,6 +29,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.verify;
 
 @ActiveProfiles("test")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
@@ -37,7 +39,7 @@ import static org.assertj.core.api.Assertions.*;
 class AuthSessionIntegrationTest {
     @Autowired AuthSessionService sessions;
     @Autowired AuthSessionRepository repository;
-    @Autowired UserRepository users;
+    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean UserRepository users;
     @Autowired MemberRepository members;
     @Autowired com.jexis.jexis_backend.account.infrastructure.AccountRepository accounts;
     @Autowired RefreshTokensUseCase refresh;
@@ -93,6 +95,68 @@ class AuthSessionIntegrationTest {
         assertThat(response.body()).contains(user.getId().toString(), user.getEmail());
         sessions.logout(pair.getRefreshToken(), pair.getAccessToken());
         assertThat(request("GET", "/auth/me", cookie(pair), null).statusCode()).isEqualTo(401);
+    }
+
+    @Test void userCanUpdatePersonalInfoAndClearPhoneNumber() throws Exception {
+        User user = user();
+        TokenPair pair = sessions.create(user.getId());
+        var response = request("PATCH", "/users/" + user.getId() + "/edit", cookie(pair),
+                "{\"firstName\":\"Alex\",\"lastName\":\"Taylor\",\"phoneNumber\":null}");
+        assertThat(response.statusCode()).isEqualTo(200);
+        assertThat(response.body()).contains("\"firstName\":\"Alex\"", "\"lastName\":\"Taylor\"", "\"phoneNumber\":null");
+        User updated = users.findById(user.getId()).orElseThrow();
+        assertThat(updated.getFirstName()).isEqualTo("Alex");
+        assertThat(updated.getLastName()).isEqualTo("Taylor");
+        assertThat(updated.getPhoneNumber()).isNull();
+        assertThat(request("GET", "/auth/me", cookie(pair), null).body()).contains("\"firstName\":\"Alex\"");
+    }
+
+    @Test void profileValidationPreservesPatchSemantics() throws Exception {
+        User user = user();
+        TokenPair pair = sessions.create(user.getId());
+        String path = "/users/" + user.getId() + "/edit";
+        assertThat(request("PATCH", path, cookie(pair), "{\"firstName\":\"  Alex  \",\"phoneNumber\":\"+48 (512) 345-678\"}").statusCode()).isEqualTo(200);
+        assertThat(users.findById(user.getId()).orElseThrow().getPhoneNumber()).isEqualTo("+48512345678");
+        assertThat(request("PATCH", path, cookie(pair), "{\"firstName\":null}").statusCode()).isEqualTo(200);
+        assertThat(users.findById(user.getId()).orElseThrow().getFirstName()).isEqualTo("Alex");
+        assertThat(users.findById(user.getId()).orElseThrow().getPhoneNumber()).isEqualTo("+48512345678");
+        for (String body : List.of("{\"firstName\":\"   \"}", "{\"phoneNumber\":\"---\"}", "{\"phoneNumber\":\"512345678\"}", "{\"phoneNumber\":\"" + "1".repeat(65) + "\"}")) {
+            assertThat(request("PATCH", path, cookie(pair), body).statusCode()).isEqualTo(400);
+        }
+        assertThat(request("PATCH", path, cookie(pair), "{\"phoneNumber\":\"  \"}").statusCode()).isEqualTo(200);
+        assertThat(users.findById(user.getId()).orElseThrow().getPhoneNumber()).isNull();
+    }
+
+    @Test void concurrentPhoneClaimsReturnOneSuccessAndOneConflict() throws Exception {
+        org.junit.jupiter.api.Assumptions.assumeTrue(System.getenv("TEST_AUTH_DATABASE_URL") != null,
+                "PostgreSQL is required to verify the production constraint name");
+        User first = user();
+        User second = user();
+        TokenPair firstSession = sessions.create(first.getId());
+        TokenPair secondSession = sessions.create(second.getId());
+        var checked = new CountDownLatch(2);
+        org.mockito.Mockito.doAnswer(invocation -> {
+            checked.countDown();
+            if (!checked.await(10, TimeUnit.SECONDS)) throw new AssertionError("Phone checks did not overlap");
+            return false;
+        }).when(users).existsByPhoneNumberAndIdNot(org.mockito.ArgumentMatchers.eq("+16502530000"), org.mockito.ArgumentMatchers.any(UUID.class));
+        var executor = Executors.newFixedThreadPool(2);
+        try {
+            var one = executor.submit(() -> request("PATCH", "/users/" + first.getId() + "/edit", cookie(firstSession), "{\"phoneNumber\":\"+1 (650) 253-0000\"}"));
+            var two = executor.submit(() -> request("PATCH", "/users/" + second.getId() + "/edit", cookie(secondSession), "{\"phoneNumber\":\"+16502530000\"}"));
+            var responses = List.of(one.get(20, TimeUnit.SECONDS), two.get(20, TimeUnit.SECONDS));
+            assertThat(responses.stream().map(HttpResponse::statusCode).toList()).containsExactlyInAnyOrder(200, 409);
+            assertThat(responses.stream().filter(response -> response.statusCode() == 409).findFirst().orElseThrow().body()).contains("PHONE_NUMBER_EXISTS");
+        } finally { executor.shutdownNow(); }
+    }
+
+    @Test void passwordChangeLinkAlwaysGoesToSignedInUser() throws Exception {
+        User user = user();
+        TokenPair pair = sessions.create(user.getId());
+        var response = request("POST", "/users/change-password", cookie(pair),
+                "{\"email\":\"someone-else@example.com\"}");
+        assertThat(response.statusCode()).isEqualTo(200);
+        verify(emailProducer).sendEmailTask(argThat(task -> user.getEmail().equals(task.getTo())));
     }
 
     @Test void refreshRotatesUniqueTokensAndStoresOnlyTheirHash() {
@@ -298,7 +362,7 @@ class AuthSessionIntegrationTest {
     @Test void signupIssuesARegisteredSession() throws Exception {
         String unique = Long.toString(System.nanoTime());
         String body = "{\"firstName\":\"New\",\"lastName\":\"User\",\"email\":\"" + unique
-                + "@example.com\",\"phoneNumber\":\"" + unique + "\",\"password\":\"password-123\"}";
+                + "@example.com\",\"phoneNumber\":null,\"password\":\"password-123\"}";
         var response = request("POST", "/auth/signup", null, body);
         assertThat(response.statusCode()).isEqualTo(200);
         String refreshCookie = response.headers().allValues("Set-Cookie").stream()

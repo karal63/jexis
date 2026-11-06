@@ -61,7 +61,7 @@ class EmailReliabilityTest {
     @Test void outboxFailureRollsBackNewUser() {
         doThrow(new IllegalStateException("outbox unavailable")).when(producer).sendEmailTask(any());
         var request = new com.jexis.jexis_backend.user.application.dto.CreateDto(
-                "Test", "User", "rollback@example.com", "+48111111111", "TestPassword123!");
+                "Test", "User", "rollback@example.com", "+48512345678", "TestPassword123!");
         assertThatThrownBy(() -> createUser.execute(request,
                 java.util.List.of(com.jexis.jexis_backend.user.domain.enums.UserRole.USER)))
                 .isInstanceOf(IllegalStateException.class);

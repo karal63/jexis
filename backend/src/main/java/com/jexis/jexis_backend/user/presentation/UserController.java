@@ -157,8 +157,8 @@ public class UserController {
     }
 
     @PostMapping("/users/change-password")
-    public ResponseEntity<String> requestPasswordReset(@Valid @RequestBody RequestPasswordChangeDto body) {
-        requestPasswordChangeUseCase.execute(body);
+    public ResponseEntity<String> requestPasswordReset(@AuthenticationPrincipal AuthUser user) {
+        requestPasswordChangeUseCase.execute(new RequestPasswordChangeDto(user.email()));
         return ResponseEntity.ok("We sent your password reset link to your email");
     }
 
