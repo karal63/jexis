@@ -43,12 +43,12 @@ const accounts = [
 const json = (data: unknown, status = 200) =>
     new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
 
-function mount() {
+function mount(path = "/app") {
     const store = createAppStore();
     store.dispatch(sessionReceived(user));
     render(
         <Provider store={store}>
-            <MemoryRouter initialEntries={["/app"]}>
+            <MemoryRouter initialEntries={[path]}>
                 <App />
             </MemoryRouter>
         </Provider>,
@@ -248,6 +248,27 @@ describe("all accounts", () => {
         ).toBeInTheDocument();
         expect(screen.getByText("Account overview")).toBeInTheDocument();
         expect(screen.getByRole("link", { name: "All accounts" })).toHaveAttribute("href", "/app");
+    });
+
+    it("opens bank setup after onboarding when the payout account is required", async () => {
+        vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+            const url = new URL((input as Request).url);
+            if (url.pathname.endsWith("/accounts/account-1")) return json(accounts[0]);
+            if (url.pathname.endsWith("/accounts/account-1/onboarding"))
+                return json({
+                    status: "COMPLETED",
+                    canOnboard: true,
+                    url: null,
+                    externalAccountRequired: true,
+                });
+            return json({}, 404);
+        });
+        mount("/app/accounts/account-1");
+
+        expect(
+            await screen.findByRole("heading", { name: "Add a bank account" }),
+        ).toBeInTheDocument();
+        expect(screen.getByRole("textbox", { name: "Routing number" })).toBeDisabled();
     });
 
     it("searches all memberships through the server and paginates results", async () => {

@@ -118,6 +118,14 @@ export const pl: Record<TranslationKey, string> = {
     "accounts.onboardingContinue": "Kontynuuj konfigurację",
     "accounts.onboardingPending": "Weryfikacja w toku",
     "accounts.onboardingCheckStatus": "Sprawdź status",
+    "accounts.externalAccountTitle": "Dodaj konto bankowe",
+    "accounts.externalAccountDescription":
+        "Konto bankowe jest wymagane do wypłat. Konfiguracja nie jest jeszcze dostępna.",
+    "accounts.externalAccountHolder": "Nazwa właściciela konta",
+    "accounts.externalAccountRouting": "Numer rozliczeniowy banku",
+    "accounts.externalAccountNumber": "Numer konta",
+    "accounts.externalAccountContactAdmin":
+        "Poproś administratora o dodanie konta bankowego do wypłat.",
     "accounts.onboardingRestricted":
         "Stripe nałożył ograniczenia na to konto. Skontaktuj się z pomocą techniczną.",
     "accounts.openNamed": "Otwórz {{name}}",

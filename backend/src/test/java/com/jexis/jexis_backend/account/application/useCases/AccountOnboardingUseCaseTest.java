@@ -69,7 +69,7 @@ class AccountOnboardingUseCaseTest {
         var type = AccountLinkCreateParams.Type.ACCOUNT_ONBOARDING;
         when(links.execute(connectId, accountId, type)).thenReturn(firstLink, secondLink);
 
-        assertThat(onboarding.getStatus(accountId)).isEqualTo(OnboardingStatus.NOT_STARTED);
+        assertThat(onboarding.getStatus(accountId, true).status()).isEqualTo(OnboardingStatus.NOT_STARTED);
         verifyNoInteractions(links);
         assertThat(onboarding.createLink(accountId).url()).isEqualTo(firstLink.getUrl());
         assertThat(onboarding.createLink(accountId).url()).isEqualTo(secondLink.getUrl());
@@ -78,6 +78,24 @@ class AccountOnboardingUseCaseTest {
         var result = onboarding.createLink(accountId);
         assertThat(result.status()).isEqualTo(OnboardingStatus.PENDING_VERIFICATION);
         assertThat(result.url()).isNull();
+        var requirements = new Account.Requirements();
+        requirements.setCurrentlyDue(List.of("external_account"));
+        requirements.setPastDue(List.of("external_account"));
+        requirements.setDisabledReason("requirements.past_due");
+        stripeAccount.setRequirements(requirements);
+        var capabilities = new Account.Capabilities();
+        capabilities.setCardIssuing("active");
+        capabilities.setTreasury("active");
+        stripeAccount.setCapabilities(capabilities);
+
+        var status = onboarding.getStatus(accountId, true);
+        assertThat(status.status()).isEqualTo(OnboardingStatus.COMPLETED);
+        assertThat(status.externalAccountRequired()).isTrue();
+        assertThat(onboarding.createLink(accountId).url()).isNull();
+
+        requirements.setCurrentlyDue(List.of("external_account", "individual.id_number"));
+        assertThat(onboarding.getStatus(accountId, true).status()).isEqualTo(OnboardingStatus.ACTION_REQUIRED);
+
         verify(links, times(2)).execute(connectId, accountId, type);
     }
 }

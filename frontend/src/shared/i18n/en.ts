@@ -119,6 +119,14 @@ export const en = {
     "accounts.onboardingContinue": "Continue onboarding",
     "accounts.onboardingPending": "Verification in progress",
     "accounts.onboardingCheckStatus": "Check status",
+    "accounts.externalAccountTitle": "Add a bank account",
+    "accounts.externalAccountDescription":
+        "A bank account is required for payouts. Setup is not yet available.",
+    "accounts.externalAccountHolder": "Account holder name",
+    "accounts.externalAccountRouting": "Routing number",
+    "accounts.externalAccountNumber": "Account number",
+    "accounts.externalAccountContactAdmin":
+        "Ask an account admin to add a bank account for payouts.",
     "accounts.onboardingRestricted":
         "Stripe has restricted this account. Contact support for help.",
     "accounts.openNamed": "Open {{name}}",

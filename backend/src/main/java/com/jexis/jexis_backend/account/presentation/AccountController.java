@@ -155,8 +155,7 @@ public class AccountController {
     @GetMapping("/accounts/{accountId}/onboarding")
     @PreAuthorize("@accountAuthorization.canView(authentication.principal.id(), #accountId)")
     public AccountOnboardingDto getOnboarding(@PathVariable UUID accountId, @AuthenticationPrincipal AuthUser user) {
-        return new AccountOnboardingDto(accountOnboardingUseCase.getStatus(accountId),
-                accountAuthorization.canEdit(user.id(), accountId), null);
+        return accountOnboardingUseCase.getStatus(accountId, accountAuthorization.canEdit(user.id(), accountId));
     }
 
     @PostMapping("/accounts/{accountId}/onboarding")

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { ArrowLeft, Building2 } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import { Link, Navigate, useParams } from "react-router-dom";
 import {
     accountName,
     useAccountQuery,
@@ -13,12 +13,30 @@ import { CenteredPage } from "@/shared/ui/centered-page";
 import { PageLoader } from "@/shared/ui/page-loader";
 import { useI18n } from "@/shared/i18n/useI18n";
 
-export default function AccountPage() {
+import ExternalAccountSetup from "./ExternalAccountSetup";
+
+export default function AccountPage({
+    externalAccountSetup = false,
+}: {
+    externalAccountSetup?: boolean;
+}) {
     const { accountId = "" } = useParams();
-    return <AccountOverview key={accountId} accountId={accountId} />;
+    return (
+        <AccountOverview
+            key={accountId}
+            accountId={accountId}
+            externalAccountSetup={externalAccountSetup}
+        />
+    );
 }
 
-function AccountOverview({ accountId }: { accountId: string }) {
+function AccountOverview({
+    accountId,
+    externalAccountSetup,
+}: {
+    accountId: string;
+    externalAccountSetup: boolean;
+}) {
     const { t } = useI18n();
     const {
         data: account,
@@ -78,6 +96,23 @@ function AccountOverview({ accountId }: { accountId: string }) {
         </>
     );
 
+    const needsExternalAccount =
+        status === "COMPLETED" && onboarding.currentData?.externalAccountRequired;
+    const accountPath = `/app/accounts/${accountId}`;
+
+    if (!accountError && account) {
+        if (externalAccountSetup) {
+            return needsExternalAccount && canOnboard ? (
+                <ExternalAccountSetup />
+            ) : (
+                <Navigate to={accountPath} replace />
+            );
+        }
+        if (needsExternalAccount && canOnboard) {
+            return <Navigate to={`${accountPath}/external-account`} replace />;
+        }
+    }
+
     if (!accountError && name && notStarted) {
         return (
             <CenteredPage
@@ -129,6 +164,11 @@ function AccountOverview({ accountId }: { accountId: string }) {
                         <h1 className="mt-2 font-display text-3xl font-bold">{name}</h1>
                         {account.email && (
                             <p className="mt-2 text-sm text-muted-foreground">{account.email}</p>
+                        )}
+                        {needsExternalAccount && !canOnboard && (
+                            <p className="mt-4 text-sm text-muted-foreground">
+                                {t("accounts.externalAccountContactAdmin")}
+                            </p>
                         )}
                         {status === "ACTION_REQUIRED" && (
                             <>
