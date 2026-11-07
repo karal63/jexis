@@ -18,7 +18,6 @@ public record AccountResponseDto(
         String phone,
         String email,
         String connectAccountId,
-        String accountLink,
         UserResponseDto owner,
         LocalDateTime createdAt,
         LocalDateTime updatedAt) {

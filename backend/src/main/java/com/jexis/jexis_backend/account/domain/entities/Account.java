@@ -67,9 +67,6 @@ public class Account {
     @Column(nullable = false, unique = true)
     private String connectAccountId;
 
-    @Column(nullable = false, unique = true)
-    private String accountLink;
-
     @ManyToOne
     @JoinColumn(name = "owner_id", referencedColumnName = "id", nullable = false)
     private User owner;
@@ -86,10 +83,9 @@ public class Account {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-    public Account(String email, String connectAccountId, String accountLink, User owner) {
+    public Account(String email, String connectAccountId, User owner) {
         this.email = email;
         this.connectAccountId = connectAccountId;
-        this.accountLink = accountLink;
         this.owner = owner;
     }
 }

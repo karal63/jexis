@@ -18,7 +18,6 @@ public record AccountAdminResponseDto(
         String phone,
         String email,
         String connectAccountId,
-        String accountLink,
         UserAdminResponseDto owner,
         Boolean isDeleted,
         LocalDateTime deletedAt,

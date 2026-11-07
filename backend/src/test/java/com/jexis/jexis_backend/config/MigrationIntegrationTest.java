@@ -53,32 +53,35 @@ class MigrationIntegrationTest {
         finally { factory.destroy(); }
     }
 
-    private UUID insertUserAndAccount() {
+    private UUID insertUserAndAccount(boolean legacySchema) {
         UUID userId = UUID.randomUUID();
         jdbc.update("INSERT INTO users (id, first_name, last_name, email, phone_number, password, is_activated, is_deleted, created_at) VALUES (?, 'Test', 'User', 'test@example.com', '+48512345678', 'hashed', false, false, now())", userId);
-        jdbc.update("INSERT INTO accounts (id, owner_id, account_link, connect_account_id, is_deleted, created_at) VALUES (?, ?, 'link', 'acct_test', false, now())", UUID.randomUUID(), userId);
+        String insertAccount = legacySchema
+                ? "INSERT INTO accounts (id, owner_id, account_link, connect_account_id, is_deleted, created_at) VALUES (?, ?, 'link', 'acct_test', false, now())"
+                : "INSERT INTO accounts (id, owner_id, connect_account_id, is_deleted, created_at) VALUES (?, ?, 'acct_test', false, now())";
+        jdbc.update(insertAccount, UUID.randomUUID(), userId);
         return userId;
     }
 
     @Test
     void freshDatabaseMigratesValidatesAndPreservesDataOnRestart() {
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(10);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(11);
         validateEntities();
-        UUID userId = insertUserAndAccount();
+        UUID userId = insertUserAndAccount(false);
         jdbc.update("UPDATE users SET phone_number = NULL WHERE id = ?", userId);
         assertThat(jdbc.queryForObject("SELECT phone_number FROM users WHERE id = ?", String.class, userId)).isNull();
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM accounts WHERE owner_id = ?", Integer.class, userId)).isEqualTo(1);
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM flyway_schema_history WHERE success", Integer.class)).isEqualTo(10);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM flyway_schema_history WHERE success", Integer.class)).isEqualTo(11);
     }
 
     @Test
     void existingDatabaseRequiresExplicitBaselineAndRetainsRelationships() {
         new ResourceDatabasePopulator(new ClassPathResource("db/migration/V1__initial_schema.sql")).execute(dataSource);
-        UUID userId = insertUserAndAccount();
+        UUID userId = insertUserAndAccount(true);
         assertThatThrownBy(() -> flyway.migrate()).hasMessageContaining("non-empty schema");
         flyway.baseline();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(9);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(10);
         validateEntities();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM accounts WHERE owner_id = ?", Integer.class, userId)).isEqualTo(1);
     }
@@ -86,7 +89,7 @@ class MigrationIntegrationTest {
     @Test
     void freePlanSupportsLocalSubscriptionsAndPreventsDuplicateActiveProvisioning() {
         flyway.migrate();
-        UUID userId = insertUserAndAccount();
+        UUID userId = insertUserAndAccount(false);
         UUID accountId = jdbc.queryForObject("SELECT id FROM accounts WHERE owner_id = ?", UUID.class, userId);
         UUID planId = jdbc.queryForObject("SELECT id FROM plans WHERE code = 'free'", UUID.class);
         UUID priceId = jdbc.queryForObject("SELECT default_price_id FROM plans WHERE id = ?", UUID.class, planId);
@@ -106,7 +109,7 @@ class MigrationIntegrationTest {
     @Test
     void pendingSubscriptionOperationsAllowOnlyOnePerAccount() {
         flyway.migrate();
-        UUID userId = insertUserAndAccount();
+        UUID userId = insertUserAndAccount(false);
         UUID accountId = jdbc.queryForObject(
                 "SELECT id FROM accounts WHERE owner_id = ?", UUID.class, userId);
         UUID planId = jdbc.queryForObject(
@@ -126,11 +129,11 @@ class MigrationIntegrationTest {
     @Test
     void walletMigrationPreservesExistingAmountsAndSupportsLargeBalances() {
         Flyway.configure().dataSource(dataSource).schemas(schema).target("2").load().migrate();
-        UUID userId = insertUserAndAccount();
+        UUID userId = insertUserAndAccount(true);
         UUID accountId = jdbc.queryForObject("SELECT id FROM accounts WHERE owner_id = ?", UUID.class, userId);
         UUID walletId = UUID.randomUUID();
         jdbc.update("INSERT INTO wallets (id, account_id, name, stripe_financial_account_id, available_balance, is_deleted, created_at) VALUES (?, ?, 'Expenses', 'fa_test', 12345, false, now())", walletId, accountId);
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(8);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(9);
         assertThat(jdbc.queryForObject("SELECT available_balance FROM wallets WHERE id = ?", Long.class, walletId)).isEqualTo(12345L);
         assertThat(jdbc.queryForObject("SELECT currency FROM wallets WHERE id = ?", String.class, walletId)).isEqualTo("USD");
         jdbc.update("UPDATE wallets SET available_balance = ? WHERE id = ?", 3_000_000_000L, walletId);
@@ -145,13 +148,13 @@ class MigrationIntegrationTest {
     @Test
     void merchantMigrationLeavesHistoricalValuesUnknownAndStoresOriginalAmounts() {
         Flyway.configure().dataSource(dataSource).schemas(schema).target("3").load().migrate();
-        UUID userId = insertUserAndAccount();
+        UUID userId = insertUserAndAccount(true);
         UUID accountId = jdbc.queryForObject("SELECT id FROM accounts WHERE owner_id = ?", UUID.class, userId);
         UUID walletId = UUID.randomUUID();
         UUID transactionId = UUID.randomUUID();
         jdbc.update("INSERT INTO wallets (id, account_id, name, stripe_financial_account_id, available_balance, currency, is_deleted, created_at) VALUES (?, ?, 'Expenses', 'fa_test', 12345, 'USD', false, now())", walletId, accountId);
         jdbc.update("INSERT INTO transactions (id, wallet_id, type, amount, currency, direction, status) VALUES (?, ?, 'CARD_TRANSACTION', -1000, 'usd', 'DEBIT', 'COMPLETED')", transactionId, walletId);
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(7);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(8);
         assertThat(jdbc.queryForObject("SELECT merchant_amount FROM transactions WHERE id = ?", Long.class, transactionId)).isNull();
         assertThat(jdbc.queryForObject("SELECT merchant_currency FROM transactions WHERE id = ?", String.class, transactionId)).isNull();
         jdbc.update("UPDATE transactions SET merchant_amount = ?, merchant_currency = 'jpy' WHERE id = ?", -3_000_000_000L, transactionId);
@@ -165,8 +168,8 @@ class MigrationIntegrationTest {
     @Test
     void sessionMigrationPreservesUsersAndPersistsRevocation() {
         Flyway.configure().dataSource(dataSource).schemas(schema).target("4").load().migrate();
-        UUID userId = insertUserAndAccount();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(6);
+        UUID userId = insertUserAndAccount(true);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(7);
         UUID sessionId = UUID.randomUUID();
         jdbc.update("INSERT INTO auth_sessions (id, user_id, refresh_token_hash, expires_at, created_at) VALUES (?, ?, ?, now() + interval '30 days', now())",
                 sessionId, userId, "a".repeat(64));
@@ -179,9 +182,9 @@ class MigrationIntegrationTest {
     @Test
     void phoneMigrationNormalizesAndEnforcesCanonicalUniqueness() {
         Flyway.configure().dataSource(dataSource).schemas(schema).target("9").load().migrate();
-        UUID user = insertUserAndAccount();
+        UUID user = insertUserAndAccount(true);
         jdbc.update("UPDATE users SET phone_number = '+48 (512) 345-678' WHERE id = ?", user);
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(1);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(2);
         assertThat(jdbc.queryForObject("SELECT phone_number FROM users WHERE id = ?", String.class, user)).isEqualTo("+48512345678");
         assertThatThrownBy(() -> jdbc.update("UPDATE users SET phone_number = '512345678' WHERE id = ?", user))
                 .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
@@ -192,7 +195,7 @@ class MigrationIntegrationTest {
     @Test
     void phoneMigrationReportsAllProblemsWithoutChangingData() throws Exception {
         Flyway.configure().dataSource(dataSource).schemas(schema).target("9").load().migrate();
-        UUID first = insertUserAndAccount();
+        UUID first = insertUserAndAccount(true);
         UUID second = UUID.randomUUID();
         UUID invalid = UUID.randomUUID();
         jdbc.update("UPDATE users SET phone_number = '+48 (512) 345-678' WHERE id = ?", first);
@@ -202,7 +205,7 @@ class MigrationIntegrationTest {
         assertThat(jdbc.queryForObject("SELECT phone_number FROM users WHERE id = ?", String.class, first)).isEqualTo("+48 (512) 345-678");
         assertThat(jdbc.queryForObject("SELECT count(*) FROM pg_constraint WHERE conrelid = 'users'::regclass AND conname = 'users_phone_number_key'", Integer.class)).isEqualTo(1);
         jdbc.update("UPDATE users SET phone_number = NULL WHERE id IN (?, ?)", second, invalid);
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(1);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(2);
         assertThat(jdbc.queryForObject("SELECT phone_number FROM users WHERE id = ?", String.class, first)).isEqualTo("+48512345678");
     }
 

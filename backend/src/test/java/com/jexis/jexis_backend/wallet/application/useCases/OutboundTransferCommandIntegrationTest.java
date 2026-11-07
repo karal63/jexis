@@ -37,7 +37,7 @@ class OutboundTransferCommandIntegrationTest {
         String unique = UUID.randomUUID().toString();
         User user = users.saveAndFlush(new User("Transfer", "Test", unique + "@example.com", unique,
                 "hash", null, List.of(UserRole.USER)));
-        Account account = accounts.saveAndFlush(new Account(user.getEmail(), "acct_" + unique, "link", user));
+        Account account = accounts.saveAndFlush(new Account(user.getEmail(), "acct_" + unique, user));
         Wallet wallet = wallets.saveAndFlush(new Wallet("Test", "fa_" + unique, account));
         var destination = new ExternalAccount(account, "pm_1", "Bank", "1234", "US", "usd", true);
         UUID key = UUID.randomUUID();

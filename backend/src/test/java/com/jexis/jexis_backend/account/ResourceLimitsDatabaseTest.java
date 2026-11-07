@@ -124,7 +124,7 @@ class ResourceLimitsDatabaseTest {
         reset(stripeCreate, stripeEdit, stripeHolder, stripeTreasury);
         tx.executeWithoutResult(s -> {
             User owner = user();
-            Account account = new Account("account@example.com", UUID.randomUUID().toString(), UUID.randomUUID().toString(), owner);
+            Account account = new Account("account@example.com", UUID.randomUUID().toString(), owner);
             em.persist(account);
             accountId = account.getId();
             userId = owner.getId();
@@ -164,7 +164,7 @@ class ResourceLimitsDatabaseTest {
             holder(account, account.getOwner(), CardHolderStatus.active, false);
             holder(account, user(), CardHolderStatus.inactive, false);
             holder(account, user(), CardHolderStatus.active, true);
-            Account other = new Account("other@example.com", UUID.randomUUID().toString(), UUID.randomUUID().toString(), account.getOwner());
+            Account other = new Account("other@example.com", UUID.randomUUID().toString(), account.getOwner());
             em.persist(other);
             holder(other, account.getOwner(), CardHolderStatus.active, false);
         });
@@ -237,7 +237,7 @@ class ResourceLimitsDatabaseTest {
             em.persist(new Wallet("Existing", "fa_" + UUID.randomUUID(), current));
             Wallet deleted = new Wallet("Deleted", "fa_" + UUID.randomUUID(), current);
             deleted.setIsDeleted(true); em.persist(deleted);
-            Account other = new Account("other@example.com", UUID.randomUUID().toString(), UUID.randomUUID().toString(), current.getOwner());
+            Account other = new Account("other@example.com", UUID.randomUUID().toString(), current.getOwner());
             em.persist(other); em.persist(new Wallet("Other account", "fa_" + UUID.randomUUID(), other));
             return entitlement.getId();
         });
@@ -303,7 +303,7 @@ class ResourceLimitsDatabaseTest {
             card(account, CardStatus.inactive, false);
             card(account, CardStatus.canceled, false);
             card(account, CardStatus.active, true);
-            Account other = new Account("other@example.com", UUID.randomUUID().toString(), UUID.randomUUID().toString(), account.getOwner());
+            Account other = new Account("other@example.com", UUID.randomUUID().toString(), account.getOwner());
             em.persist(other); card(other, CardStatus.active, false);
         });
         assertThat(checker.execute(accountId, AccountResource.CARDS, 3).allowed()).isTrue();

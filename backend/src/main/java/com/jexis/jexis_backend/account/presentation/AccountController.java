@@ -3,7 +3,9 @@ package com.jexis.jexis_backend.account.presentation;
 import java.util.List;
 import java.util.UUID;
 
+import com.jexis.jexis_backend.account.application.dto.AccountOnboardingDto;
 import com.jexis.jexis_backend.account.application.dto.GetUpdateLinkDto;
+import com.jexis.jexis_backend.account.application.security.AccountAuthorization;
 import com.jexis.jexis_backend.account.application.dto.PaginatedAccountsResponseDto;
 import com.jexis.jexis_backend.account.application.dto.PaginatedAccountsAdminResponseDto;
 import com.jexis.jexis_backend.account.application.useCases.*;
@@ -49,6 +51,8 @@ public class AccountController {
     private final DtoHelper dtoHelper;
     private final GetUserAccountsUseCase getUserAccountsUseCase;
     private final GetUpdateLinkUseCase getUpdateLinkUseCase;
+    private final AccountOnboardingUseCase accountOnboardingUseCase;
+    private final AccountAuthorization accountAuthorization;
 
     /**
      * Returns a paginated list of accounts for admins.
@@ -146,6 +150,19 @@ public class AccountController {
     public String delete(@PathVariable UUID accountId) {
         deleteAccountUseCase.execute(accountId);
         return "Account with ID " + accountId + " has been deleted.";
+    }
+
+    @GetMapping("/accounts/{accountId}/onboarding")
+    @PreAuthorize("@accountAuthorization.canView(authentication.principal.id(), #accountId)")
+    public AccountOnboardingDto getOnboarding(@PathVariable UUID accountId, @AuthenticationPrincipal AuthUser user) {
+        return new AccountOnboardingDto(accountOnboardingUseCase.getStatus(accountId),
+                accountAuthorization.canEdit(user.id(), accountId), null);
+    }
+
+    @PostMapping("/accounts/{accountId}/onboarding")
+    @PreAuthorize("@accountAuthorization.canEdit(authentication.principal.id(), #accountId)")
+    public AccountOnboardingDto createOnboardingLink(@PathVariable UUID accountId) {
+        return accountOnboardingUseCase.createLink(accountId);
     }
 
     @GetMapping("/accounts/{accountId}/get-update-link")

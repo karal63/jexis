@@ -96,8 +96,7 @@ class SubscriptionOperationConcurrencyDatabaseTest {
             User user = new User("Test", "User", unique + "@example.com", unique,
                     "password", null, List.of());
             entityManager.persist(user);
-            Account account = new Account("account@example.com", "acct_" + unique,
-                    "link_" + unique, user);
+            Account account = new Account("account@example.com", "acct_" + unique, user);
             entityManager.persist(account);
             Plan plan = new Plan("prod_" + unique, "Paid", "paid_" + unique,
                     null, true, PlanStatus.PUBLISHED);

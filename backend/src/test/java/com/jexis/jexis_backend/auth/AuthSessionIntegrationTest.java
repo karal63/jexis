@@ -290,7 +290,7 @@ class AuthSessionIntegrationTest {
         User target = user();
         User other = user();
         var account = accounts.saveAndFlush(new com.jexis.jexis_backend.account.domain.entities.Account(
-                other.getEmail(), "acct_" + UUID.randomUUID(), "link", other));
+                other.getEmail(), "acct_" + UUID.randomUUID(), other));
         var targetMember = members.saveAndFlush(new com.jexis.jexis_backend.member.domain.entities.Member(
                 account, target, com.jexis.jexis_backend.member.domain.enums.Role.MEMBER));
         var otherMember = members.saveAndFlush(new com.jexis.jexis_backend.member.domain.entities.Member(

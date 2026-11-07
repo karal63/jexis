@@ -59,6 +59,7 @@ describe("all accounts", () => {
     it("creates an account once, opens it, and refreshes the account list", async () => {
         let finishCreation!: (response: Response) => void;
         let created = false;
+        let onboardingStatus = "NOT_STARTED";
         const fetch = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
             const request = input as Request;
             const url = new URL(request.url);
@@ -69,6 +70,10 @@ describe("all accounts", () => {
                         resolve(response);
                     };
                 });
+            }
+            if (url.pathname.endsWith("/accounts/account-1/onboarding")) {
+                if (request.method === "POST") onboardingStatus = "PENDING_VERIFICATION";
+                return json({ status: onboardingStatus, canOnboard: true, url: null });
             }
             if (url.pathname.endsWith("/accounts/account-1")) return json(accounts[0]);
             if (url.pathname.endsWith("/accounts/me"))
@@ -110,6 +115,14 @@ describe("all accounts", () => {
         expect(
             await screen.findByRole("heading", { name: "North Studio", level: 1 }),
         ).toBeInTheDocument();
+        await browser.click(screen.getByRole("button", { name: "Start onboarding" }));
+        expect(await screen.findByText("Verification in progress")).toBeInTheDocument();
+        expect(fetch).toHaveBeenCalledWith(
+            expect.objectContaining({
+                method: "POST",
+                url: expect.stringContaining("/accounts/account-1/onboarding"),
+            }),
+        );
         await browser.click(screen.getByRole("link", { name: "All accounts" }));
         expect(await screen.findByRole("link", { name: "Open North Studio" })).toBeInTheDocument();
     });
@@ -125,6 +138,8 @@ describe("all accounts", () => {
                     : json(accounts[0]);
             }
             if (url.pathname.endsWith("/accounts/account-1")) return json(accounts[0]);
+            if (url.pathname.endsWith("/accounts/account-1/onboarding"))
+                return json({ status: "NOT_STARTED", canOnboard: true, url: null });
             return json({ items: [], page: 1, pageSize: 12, totalItems: 0, totalPages: 0 });
         });
         mount();
@@ -210,6 +225,8 @@ describe("all accounts", () => {
                     totalPages: 1,
                 });
             if (url.pathname.endsWith("/accounts/account-2")) return json(accounts[1]);
+            if (url.pathname.endsWith("/accounts/account-2/onboarding"))
+                return json({ status: "COMPLETED", canOnboard: false, url: null });
             return json({}, 404);
         });
         mount();
@@ -229,6 +246,7 @@ describe("all accounts", () => {
         expect(
             await screen.findByRole("heading", { name: "West Works", level: 1 }),
         ).toBeInTheDocument();
+        expect(screen.getByText("Account overview")).toBeInTheDocument();
         expect(screen.getByRole("link", { name: "All accounts" })).toHaveAttribute("href", "/app");
     });
 

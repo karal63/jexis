@@ -77,7 +77,6 @@ public class DtoHelper {
                 account.getPhone(),
                 account.getEmail(),
                 account.getConnectAccountId(),
-                account.getAccountLink(),
                 toUserDto(account.getOwner()),
                 account.getCreatedAt(),
                 account.getUpdatedAt());
@@ -230,7 +229,6 @@ public class DtoHelper {
                 account.getPhone(),
                 account.getEmail(),
                 account.getConnectAccountId(),
-                account.getAccountLink(),
                 toUserAdminDto(account.getOwner()),
                 account.getIsDeleted(),
                 account.getDeletedAt(),

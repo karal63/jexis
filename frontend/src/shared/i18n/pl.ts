@@ -110,6 +110,16 @@ export const pl: Record<TranslationKey, string> = {
     "accounts.noMatchesText": "Spróbuj wyszukać inną nazwę lub adres e-mail.",
     "accounts.owner": "Właściciel",
     "accounts.untitled": "Konto bez nazwy",
+    "accounts.onboardingRequired":
+        "Ukończ konfigurację w Stripe, aby korzystać z funkcji finansowych tego konta.",
+    "accounts.onboardingContactAdmin":
+        "Poproś właściciela lub administratora konta o ukończenie konfiguracji w Stripe.",
+    "accounts.onboardingStart": "Rozpocznij konfigurację",
+    "accounts.onboardingContinue": "Kontynuuj konfigurację",
+    "accounts.onboardingPending": "Weryfikacja w toku",
+    "accounts.onboardingCheckStatus": "Sprawdź status",
+    "accounts.onboardingRestricted":
+        "Stripe nałożył ograniczenia na to konto. Skontaktuj się z pomocą techniczną.",
     "accounts.openNamed": "Otwórz {{name}}",
     "accounts.pagination": "Strony kont",
     "accounts.previous": "Poprzednia",

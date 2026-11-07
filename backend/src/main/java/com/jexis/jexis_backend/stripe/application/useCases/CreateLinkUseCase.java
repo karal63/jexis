@@ -1,8 +1,13 @@
 package com.jexis.jexis_backend.stripe.application.useCases;
 
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import com.stripe.StripeClient;
+import com.stripe.exception.StripeException;
 import com.stripe.model.AccountLink;
 import com.stripe.param.AccountLinkCreateParams;
 
@@ -16,6 +21,9 @@ import com.stripe.param.AccountLinkCreateParams;
 public class CreateLinkUseCase {
     private final StripeClient stripe;
 
+    @Value("${application.origin}")
+    private String applicationOrigin;
+
     public CreateLinkUseCase(StripeClient stripe) {
         this.stripe = stripe;
     }
@@ -24,21 +32,23 @@ public class CreateLinkUseCase {
      * Creates a new account link
      * Accepts an account ID from the controller, creates a new account link,
      * and returns the created account link.
-     * @param accountId the ID of the account for which to create a link
      * @return the created account link
      */
-    public AccountLink execute(String accountId, AccountLinkCreateParams.Type type) {
+    public AccountLink execute(String connectAccountId, UUID accountId, AccountLinkCreateParams.Type type) {
+        String callbackUrl = UriComponentsBuilder.fromUriString(applicationOrigin)
+                .pathSegment("app", "accounts", accountId.toString())
+                .build().toUriString();
         try {
             AccountLinkCreateParams params = AccountLinkCreateParams.builder()
-                    .setAccount(accountId)
-                    .setRefreshUrl("https://example.com")
-                    .setReturnUrl("https://example.com?accountId=" + accountId)
+                    .setAccount(connectAccountId)
+                    .setRefreshUrl(callbackUrl)
+                    .setReturnUrl(callbackUrl)
                     .setType(type)
                     .build();
 
             return stripe.v1().accountLinks().create(params);
-        } catch (Exception e) {
-            throw new RuntimeException(e.getMessage());
+        } catch (StripeException e) {
+            throw new RuntimeException("Failed to create Stripe account link", e);
         }
     }
 }

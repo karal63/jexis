@@ -111,6 +111,16 @@ export const en = {
     "accounts.noMatchesText": "Try another name or email address.",
     "accounts.owner": "Owner",
     "accounts.untitled": "Unnamed account",
+    "accounts.onboardingRequired":
+        "Complete Stripe onboarding to use this account’s financial features.",
+    "accounts.onboardingContactAdmin":
+        "Ask an account owner or admin to complete Stripe onboarding.",
+    "accounts.onboardingStart": "Start onboarding",
+    "accounts.onboardingContinue": "Continue onboarding",
+    "accounts.onboardingPending": "Verification in progress",
+    "accounts.onboardingCheckStatus": "Check status",
+    "accounts.onboardingRestricted":
+        "Stripe has restricted this account. Contact support for help.",
     "accounts.openNamed": "Open {{name}}",
     "accounts.pagination": "Account pages",
     "accounts.previous": "Previous",
