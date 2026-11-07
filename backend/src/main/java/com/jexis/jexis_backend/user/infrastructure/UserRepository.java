@@ -36,7 +36,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     Optional<User> findByEmail(String email);
 
-    Optional<User> findByActivationTokenHash(String token);
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<User> findByActivationTokenHashAndIsDeletedFalse(String token);
 
     @Query("""
             SELECT u FROM User u

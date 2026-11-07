@@ -39,6 +39,10 @@ export const authApi = baseApi.injectEndpoints({
             }),
         }),
 
+        resendActivationEmail: builder.mutation<void, void>({
+            query: () => ({ url: "/me/activation-email", method: "POST" }),
+        }),
+
         requestPasswordChange: builder.mutation<string, void>({
             query: () => ({
                 url: "/users/change-password",
@@ -69,6 +73,7 @@ export const {
     useLoginMutation,
     useSignupMutation,
     useForgotPasswordMutation,
+    useResendActivationEmailMutation,
     useRequestPasswordChangeMutation,
     useResetPasswordMutation,
     useLogoutMutation,

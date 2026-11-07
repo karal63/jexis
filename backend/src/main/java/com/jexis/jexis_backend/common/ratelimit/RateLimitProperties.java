@@ -22,6 +22,7 @@ public class RateLimitProperties {
             "reset-email", new Limit(3, Duration.ofHours(1)),
             "confirm-ip", new Limit(10, Duration.ofMinutes(1)),
             "activate-ip", new Limit(10, Duration.ofMinutes(1)),
+            "activation-email-user", new Limit(1, Duration.ofMinutes(1)),
             "refresh-ip", new Limit(60, Duration.ofMinutes(1)),
             "refresh-user", new Limit(30, Duration.ofMinutes(1))));
 

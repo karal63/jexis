@@ -12,7 +12,7 @@ public class GetUserByActivationTokenHashUseCase {
     private final UserRepository userRepository;
 
     public User execute(String tokenHash) {
-        return userRepository.findByActivationTokenHash(tokenHash)
+        return userRepository.findByActivationTokenHashAndIsDeletedFalse(tokenHash)
                 .orElseThrow(UserNotFoundException::new);
     }
 }
