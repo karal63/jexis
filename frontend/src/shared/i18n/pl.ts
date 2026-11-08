@@ -119,11 +119,13 @@ export const pl: Record<TranslationKey, string> = {
     "accounts.onboardingPending": "Weryfikacja w toku",
     "accounts.onboardingCheckStatus": "Sprawdź status",
     "accounts.externalAccountTitle": "Dodaj konto bankowe",
-    "accounts.externalAccountDescription":
-        "Konto bankowe jest wymagane do wypłat. Konfiguracja nie jest jeszcze dostępna.",
-    "accounts.externalAccountHolder": "Nazwa właściciela konta",
-    "accounts.externalAccountRouting": "Numer rozliczeniowy banku",
-    "accounts.externalAccountNumber": "Numer konta",
+    "accounts.externalAccountDescription": "Połącz konto bankowe, aby otrzymywać wypłaty.",
+    "accounts.bankAccountConnect": "Połącz konto bankowe",
+    "accounts.bankAccountsManage": "Zarządzaj kontami bankowymi",
+    "accounts.bankAccountsDescription": "Wyświetl lub zmień konta bankowe do wypłat.",
+    "accounts.bankAccountUnavailable": "Konfiguracja konta bankowego jest obecnie niedostępna.",
+    "accounts.bankAccountLoadError":
+        "Nie udało się wczytać konfiguracji konta bankowego. Spróbuj ponownie.",
     "accounts.externalAccountContactAdmin":
         "Poproś administratora o dodanie konta bankowego do wypłat.",
     "accounts.onboardingRestricted":
@@ -137,7 +139,8 @@ export const pl: Record<TranslationKey, string> = {
     "settings.title": "Ustawienia",
     "activation.message": "Twoje konto czeka na aktywację. Poproś o e-mail z linkiem aktywacyjnym.",
     "activation.sendEmail": "Wyślij e-mail aktywacyjny",
-    "activation.emailSent": "E-mail aktywacyjny został wysłany. Sprawdź skrzynkę odbiorczą i użyj najnowszego linku.",
+    "activation.emailSent":
+        "E-mail aktywacyjny został wysłany. Sprawdź skrzynkę odbiorczą i użyj najnowszego linku.",
     "settings.intro": "Zarządzaj swoimi danymi i preferencjami.",
     "settings.sections": "Sekcje ustawień",
     "settings.publicProfile": "Profil publiczny",

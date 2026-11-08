@@ -1,33 +1,156 @@
+import { loadStripe } from "@stripe/stripe-js/pure";
+import { useState } from "react";
+import { loadConnectAndInitialize } from "@stripe/connect-js/pure";
+import { ConnectAccountManagement, ConnectComponentsProvider } from "@stripe/react-connect-js";
+import {
+    useBankAccountSessionMutation,
+    useCompletePayoutBankSetupMutation,
+    usePayoutBankSetupMutation,
+} from "@/features/accounts";
 import { useI18n } from "@/shared/i18n/useI18n";
+import { Button } from "@/shared/ui/button";
 import { CenteredPage } from "@/shared/ui/centered-page";
 
-const fields = [
-    { label: "accounts.externalAccountHolder", placeholder: "Example Company" },
-    { label: "accounts.externalAccountRouting", placeholder: "•••••••••" },
-    { label: "accounts.externalAccountNumber", placeholder: "••••••••••••" },
-] as const;
-
-export default function ExternalAccountSetup() {
+export default function ExternalAccountSetup({
+    accountId,
+    manage,
+    onExit,
+}: {
+    accountId: string;
+    manage: boolean;
+    onExit: () => void;
+}) {
     const { t } = useI18n();
+    const [startPayoutBankSetup] = usePayoutBankSetupMutation();
+    const [completePayoutBankSetup] = useCompletePayoutBankSetupMutation();
+    const [createBankAccountSession] = useBankAccountSessionMutation();
+    const [instance, setInstance] = useState<ReturnType<typeof loadConnectAndInitialize>>();
+    const [busy, setBusy] = useState(false);
+    const [completedIntent, setCompletedIntent] = useState<string>();
+    const [failed, setFailed] = useState(false);
+    const [errorDetail, setErrorDetail] = useState("");
+    const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined;
+
+    async function linkBank() {
+        if (!publishableKey || busy) return;
+        setFailed(false);
+        setErrorDetail("");
+        setBusy(true);
+        let stage = "Loading Stripe";
+        try {
+            let setupIntentId = completedIntent;
+            if (!setupIntentId) {
+                const stripe = await loadStripe(publishableKey);
+                if (!stripe) throw new Error("Stripe could not load");
+                stage = "Starting bank setup";
+                const setup = await startPayoutBankSetup(accountId).unwrap();
+                stage = "Connecting bank";
+                const collected = await stripe.collectBankAccountForSetup({
+                    clientSecret: setup.clientSecret,
+                    params: {
+                        payment_method_type: "us_bank_account",
+                        payment_method_data: { billing_details: { name: setup.name } },
+                    },
+                });
+                if (collected.error) throw collected.error;
+                if (collected.setupIntent.status === "requires_payment_method") return;
+                stage = "Confirming bank";
+                const confirmed =
+                    collected.setupIntent.status === "requires_confirmation"
+                        ? await stripe.confirmUsBankAccountSetup(setup.clientSecret)
+                        : collected;
+                if (confirmed.error) throw confirmed.error;
+                if (confirmed.setupIntent.status !== "succeeded")
+                    throw new Error("Bank setup incomplete");
+                setupIntentId = confirmed.setupIntent.id;
+                setCompletedIntent(setupIntentId);
+            }
+            stage = "Saving bank account";
+            await completePayoutBankSetup({ id: accountId, setupIntentId }).unwrap();
+            onExit();
+        } catch (error) {
+            const failure = error as {
+                message?: string;
+                status?: number | string;
+                data?: { message?: string; requestId?: string };
+            };
+            const message = failure?.data?.message ?? failure?.message ?? "";
+            const reference = failure?.data?.requestId;
+            setErrorDetail(
+                [
+                    stage,
+                    message,
+                    failure?.status ? `HTTP ${failure.status}` : "",
+                    reference ? `Stripe request ${reference}` : "",
+                ]
+                    .filter(Boolean)
+                    .join(" — "),
+            );
+            setFailed(true);
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    function open() {
+        if (!publishableKey) return;
+        setFailed(false);
+        setErrorDetail("");
+        setInstance(
+            loadConnectAndInitialize({
+                publishableKey,
+                fetchClientSecret: async () => {
+                    const session = await createBankAccountSession({
+                        id: accountId,
+                        manage,
+                    }).unwrap();
+                    return session.clientSecret;
+                },
+            }),
+        );
+    }
 
     return (
         <CenteredPage
-            title={t("accounts.externalAccountTitle")}
-            description={t("accounts.externalAccountDescription")}
-            backTo="/app"
-            backLabel={t("accounts.allAccounts")}
+            title={t(manage ? "accounts.bankAccountsManage" : "accounts.externalAccountTitle")}
+            description={t(
+                manage ? "accounts.bankAccountsDescription" : "accounts.externalAccountDescription",
+            )}
+            backTo={manage ? `/app/accounts/${accountId}` : "/app"}
+            backLabel={t(manage ? "accounts.accountOverview" : "accounts.allAccounts")}
         >
-            <fieldset disabled className="grid gap-4">
-                {fields.map(({ label, placeholder }) => (
-                    <label key={label} className="grid gap-2 text-sm font-medium">
-                        {t(label)}
-                        <input
-                            className="h-10 rounded-md border border-border bg-background px-3 text-sm"
-                            placeholder={placeholder}
-                        />
-                    </label>
-                ))}
-            </fieldset>
+            {!publishableKey ? (
+                <p role="status">{t("accounts.bankAccountUnavailable")}</p>
+            ) : instance && !failed ? (
+                <ConnectComponentsProvider connectInstance={instance}>
+                    <ConnectAccountManagement onLoadError={() => setFailed(true)} />
+                </ConnectComponentsProvider>
+            ) : (
+                <>
+                    {failed && (
+                        <div role="alert">
+                            <p>{t("accounts.bankAccountLoadError")}</p>
+                            {errorDetail && (
+                                <p className="mt-2 text-sm text-muted-foreground">{errorDetail}</p>
+                            )}
+                        </div>
+                    )}
+                    <Button
+                        className="w-full"
+                        disabled={busy}
+                        aria-busy={busy}
+                        onClick={manage ? open : () => void linkBank()}
+                    >
+                        {t(
+                            failed
+                                ? "accounts.retry"
+                                : manage
+                                  ? "accounts.bankAccountsManage"
+                                  : "accounts.bankAccountConnect",
+                        )}
+                    </Button>
+                </>
+            )}
         </CenteredPage>
     );
 }

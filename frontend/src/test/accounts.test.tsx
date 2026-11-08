@@ -1,3 +1,4 @@
+import { loadStripe } from "@stripe/stripe-js/pure";
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -6,6 +7,8 @@ import { MemoryRouter } from "react-router-dom";
 import App from "@/app/App";
 import { createAppStore } from "@/app/store";
 import { sessionReceived } from "@/features/auth/model/sessionSlice";
+
+vi.mock("@stripe/stripe-js/pure", () => ({ loadStripe: vi.fn() }));
 
 const user = {
     id: "user-1",
@@ -250,25 +253,59 @@ describe("all accounts", () => {
         expect(screen.getByRole("link", { name: "All accounts" })).toHaveAttribute("href", "/app");
     });
 
-    it("opens bank setup after onboarding when the payout account is required", async () => {
+    it("attaches a confirmed bank before leaving setup", async () => {
+        vi.stubEnv("VITE_STRIPE_PUBLISHABLE_KEY", "pk_test_example");
+        const collect = vi
+            .fn()
+            .mockResolvedValueOnce({
+                error: { message: "Bank linking is unavailable for this account." },
+            })
+            .mockResolvedValueOnce({ setupIntent: { status: "requires_payment_method" } })
+            .mockResolvedValueOnce({
+                setupIntent: { id: "seti_test", status: "requires_confirmation" },
+            });
+        vi.mocked(loadStripe).mockResolvedValue({
+            collectBankAccountForSetup: collect,
+            confirmUsBankAccountSetup: vi.fn().mockResolvedValue({
+                setupIntent: { id: "seti_test", status: "succeeded" },
+            }),
+        } as unknown as Awaited<ReturnType<typeof loadStripe>>);
+        let externalAccountRequired = true;
         vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
             const url = new URL((input as Request).url);
             if (url.pathname.endsWith("/accounts/account-1")) return json(accounts[0]);
-            if (url.pathname.endsWith("/accounts/account-1/onboarding"))
+            if (url.pathname.endsWith("/onboarding"))
                 return json({
                     status: "COMPLETED",
                     canOnboard: true,
                     url: null,
-                    externalAccountRequired: true,
+                    externalAccountRequired,
                 });
+            if (url.pathname.endsWith("/payout-bank-setup"))
+                return json({ clientSecret: "secret", name: "Test Company" });
+            if (url.pathname.endsWith("/payout-bank-setup/seti_test/complete")) {
+                externalAccountRequired = false;
+                return json({});
+            }
             return json({}, 404);
         });
-        mount("/app/accounts/account-1");
-
-        expect(
-            await screen.findByRole("heading", { name: "Add a bank account" }),
-        ).toBeInTheDocument();
-        expect(screen.getByRole("textbox", { name: "Routing number" })).toBeDisabled();
+        try {
+            mount("/app/accounts/account-1");
+            const button = await screen.findByRole("button", { name: "Connect bank account" });
+            await userEvent.click(button);
+            expect(await screen.findByRole("alert")).toHaveTextContent(
+                "Connecting bank — Bank linking is unavailable for this account.",
+            );
+            await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+            await waitFor(() => expect(button).toBeEnabled());
+            expect(externalAccountRequired).toBe(true);
+            await userEvent.click(button);
+            expect(
+                await screen.findByRole("link", { name: "Manage bank accounts" }),
+            ).toBeInTheDocument();
+        } finally {
+            vi.unstubAllEnvs();
+        }
     });
 
     it("searches all memberships through the server and paginates results", async () => {

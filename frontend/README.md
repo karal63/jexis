@@ -43,3 +43,7 @@ Use `FormField` and `PasswordInput` for fields. They connect labels, invalid sta
 Use `Button to="/path"` for internal navigation, `Button href="https://..."` for external links, and `Button onClick={...}` for actions. Appearance uses semantic CSS variables; theme preference supports light, dark, and system and is persisted independently of session data.
 
 The tests exercise form behavior and the API/session lifecycle using mocked HTTP responses. Backend auth integration tests separately cover the current-user endpoint and session enforcement. They do not replace deployment/browser checks against a running backend.
+
+To test embedded bank account setup, set `VITE_STRIPE_PUBLISHABLE_KEY` in `.env.local` to the publishable key for the same Stripe environment as the backend. In Stripe Connect's external account settings, enable bank account collection for platform-managed accounts and select Financial Connections.
+
+The first payout bank is linked through a platform-scoped SetupIntent and Financial Connections. Enable US bank accounts for the platform. This version requests instant verification, so users must select a bank supported by Financial Connections. Test bank linking with sandbox keys. Existing bank management uses the Connect embedded component.

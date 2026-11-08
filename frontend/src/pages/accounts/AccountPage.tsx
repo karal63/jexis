@@ -15,27 +15,19 @@ import { useI18n } from "@/shared/i18n/useI18n";
 
 import ExternalAccountSetup from "./ExternalAccountSetup";
 
-export default function AccountPage({
-    externalAccountSetup = false,
-}: {
-    externalAccountSetup?: boolean;
-}) {
+export default function AccountPage({ bankAccountMode }: { bankAccountMode?: "setup" | "manage" }) {
     const { accountId = "" } = useParams();
     return (
-        <AccountOverview
-            key={accountId}
-            accountId={accountId}
-            externalAccountSetup={externalAccountSetup}
-        />
+        <AccountOverview key={accountId} accountId={accountId} bankAccountMode={bankAccountMode} />
     );
 }
 
 function AccountOverview({
     accountId,
-    externalAccountSetup,
+    bankAccountMode,
 }: {
     accountId: string;
-    externalAccountSetup: boolean;
+    bankAccountMode?: "setup" | "manage";
 }) {
     const { t } = useI18n();
     const {
@@ -101,9 +93,17 @@ function AccountOverview({
     const accountPath = `/app/accounts/${accountId}`;
 
     if (!accountError && account) {
-        if (externalAccountSetup) {
-            return needsExternalAccount && canOnboard ? (
-                <ExternalAccountSetup />
+        if (bankAccountMode) {
+            const manage = bankAccountMode === "manage";
+            return status === "COMPLETED" &&
+                canOnboard &&
+                (manage ? !needsExternalAccount : needsExternalAccount) ? (
+                <ExternalAccountSetup
+                    key={bankAccountMode}
+                    accountId={accountId}
+                    manage={manage}
+                    onExit={() => void refreshStatus()}
+                />
             ) : (
                 <Navigate to={accountPath} replace />
             );
@@ -164,6 +164,11 @@ function AccountOverview({
                         <h1 className="mt-2 font-display text-3xl font-bold">{name}</h1>
                         {account.email && (
                             <p className="mt-2 text-sm text-muted-foreground">{account.email}</p>
+                        )}
+                        {status === "COMPLETED" && canOnboard && (
+                            <Button className="mt-4" to={`${accountPath}/bank-accounts`}>
+                                {t("accounts.bankAccountsManage")}
+                            </Button>
                         )}
                         {needsExternalAccount && !canOnboard && (
                             <p className="mt-4 text-sm text-muted-foreground">

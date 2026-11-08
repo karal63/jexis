@@ -56,7 +56,11 @@ export default function Router() {
                         <Route path="/app/accounts/:accountId" element={<AccountPage />} />
                         <Route
                             path="/app/accounts/:accountId/external-account"
-                            element={<AccountPage externalAccountSetup />}
+                            element={<AccountPage bankAccountMode="setup" />}
+                        />
+                        <Route
+                            path="/app/accounts/:accountId/bank-accounts"
+                            element={<AccountPage bankAccountMode="manage" />}
                         />
                     </Route>
                     <Route path="/app/settings" element={<SettingsPage />} />

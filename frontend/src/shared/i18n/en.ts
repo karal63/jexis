@@ -120,11 +120,12 @@ export const en = {
     "accounts.onboardingPending": "Verification in progress",
     "accounts.onboardingCheckStatus": "Check status",
     "accounts.externalAccountTitle": "Add a bank account",
-    "accounts.externalAccountDescription":
-        "A bank account is required for payouts. Setup is not yet available.",
-    "accounts.externalAccountHolder": "Account holder name",
-    "accounts.externalAccountRouting": "Routing number",
-    "accounts.externalAccountNumber": "Account number",
+    "accounts.externalAccountDescription": "Connect a bank account to receive payouts.",
+    "accounts.bankAccountConnect": "Connect bank account",
+    "accounts.bankAccountsManage": "Manage bank accounts",
+    "accounts.bankAccountsDescription": "View or update your payout bank accounts.",
+    "accounts.bankAccountUnavailable": "Bank account setup is currently unavailable.",
+    "accounts.bankAccountLoadError": "Could not load bank account setup. Please try again.",
     "accounts.externalAccountContactAdmin":
         "Ask an account admin to add a bank account for payouts.",
     "accounts.onboardingRestricted":
@@ -136,7 +137,8 @@ export const en = {
     "accounts.page": "Page {{page}} of {{total}}",
     "accounts.accountOverview": "Account overview",
     "settings.title": "Settings",
-    "activation.message": "Your account is awaiting activation. Request an email with your activation link.",
+    "activation.message":
+        "Your account is awaiting activation. Request an email with your activation link.",
     "activation.sendEmail": "Send activation email",
     "activation.emailSent": "Activation email sent. Check your inbox for the latest link.",
     "settings.intro": "Manage your personal information and preferences.",
