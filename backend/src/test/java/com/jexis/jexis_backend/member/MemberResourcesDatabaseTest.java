@@ -96,7 +96,7 @@ class MemberResourcesDatabaseTest {
     }
     String unique() { return UUID.randomUUID().toString(); }
     Account account(User owner) {
-        Account a = new Account(unique() + "@example.com", unique(), unique(), owner); em.persist(a); return a;
+        Account a = new Account(unique() + "@example.com", unique(), owner); em.persist(a); return a;
     }
     Card records(Account account, User user, boolean deleted, String merchant, long amount) {
         Wallet wallet = new Wallet(merchant, unique(), account); em.persist(wallet);

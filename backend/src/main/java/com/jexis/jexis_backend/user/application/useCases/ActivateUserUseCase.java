@@ -6,6 +6,7 @@ import com.jexis.jexis_backend.user.domain.exceptions.UserAlreadyActivatedExcept
 import com.jexis.jexis_backend.user.infrastructure.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -13,6 +14,7 @@ public class ActivateUserUseCase {
     private final UserRepository userRepository;
     private final GetUserByActivationTokenHashUseCase getUserByActivationTokenHashUseCase;
 
+    @Transactional
     public void execute(String token) {
         String hashedToken = HashUtils.sha256(token);
 

@@ -1,3 +1,4 @@
+import { loadStripe } from "@stripe/stripe-js/pure";
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -6,6 +7,8 @@ import { MemoryRouter } from "react-router-dom";
 import App from "@/app/App";
 import { createAppStore } from "@/app/store";
 import { sessionReceived } from "@/features/auth/model/sessionSlice";
+
+vi.mock("@stripe/stripe-js/pure", () => ({ loadStripe: vi.fn() }));
 
 const user = {
     id: "user-1",
@@ -43,12 +46,12 @@ const accounts = [
 const json = (data: unknown, status = 200) =>
     new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
 
-function mount() {
+function mount(path = "/app") {
     const store = createAppStore();
     store.dispatch(sessionReceived(user));
     render(
         <Provider store={store}>
-            <MemoryRouter initialEntries={["/app"]}>
+            <MemoryRouter initialEntries={[path]}>
                 <App />
             </MemoryRouter>
         </Provider>,
@@ -56,6 +59,132 @@ function mount() {
 }
 
 describe("all accounts", () => {
+    it("creates an account once, opens it, and refreshes the account list", async () => {
+        let finishCreation!: (response: Response) => void;
+        let created = false;
+        let onboardingStatus = "NOT_STARTED";
+        const fetch = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+            const request = input as Request;
+            const url = new URL(request.url);
+            if (url.pathname.endsWith("/accounts/create")) {
+                return new Promise<Response>((resolve) => {
+                    finishCreation = (response) => {
+                        created = true;
+                        resolve(response);
+                    };
+                });
+            }
+            if (url.pathname.endsWith("/accounts/account-1/onboarding")) {
+                if (request.method === "POST") onboardingStatus = "PENDING_VERIFICATION";
+                return json({ status: onboardingStatus, canOnboard: true, url: null });
+            }
+            if (url.pathname.endsWith("/accounts/account-1")) return json(accounts[0]);
+            if (url.pathname.endsWith("/accounts/me"))
+                return json({
+                    items: created ? [accounts[0]] : [],
+                    page: 1,
+                    pageSize: 12,
+                    totalItems: created ? 1 : 0,
+                    totalPages: created ? 1 : 0,
+                });
+            return json({}, 404);
+        });
+        mount();
+        const browser = userEvent.setup();
+        await screen.findByRole("heading", { name: "No accounts yet" });
+        await browser.click(screen.getByRole("button", { name: "Create account" }));
+        expect(
+            screen.getByRole("alertdialog", { name: "Create a new account?" }),
+        ).toBeInTheDocument();
+        expect(finishCreation).toBeUndefined();
+        await browser.click(screen.getByRole("button", { name: "Create account" }));
+        const pendingButton = screen.getByRole("button", { name: "Creating account…" });
+        expect(pendingButton).toBeDisabled();
+        expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
+        await browser.keyboard("{Escape}");
+        expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+        expect(screen.getByRole("status")).toHaveTextContent("Creating account…");
+        await browser.click(pendingButton);
+        await waitFor(() => expect(finishCreation).toBeTypeOf("function"));
+        const requests = fetch.mock.calls
+            .map(([input]) => input as Request)
+            .filter((request) => new URL(request.url).pathname.endsWith("/accounts/create"));
+        expect(requests).toHaveLength(1);
+        expect(requests[0].method).toBe("POST");
+        expect(requests[0].credentials).toBe("include");
+        expect(await requests[0].clone().text()).toBe("");
+        finishCreation(json(accounts[0]));
+
+        expect(
+            await screen.findByRole("heading", { name: "North Studio", level: 1 }),
+        ).toBeInTheDocument();
+        await browser.click(screen.getByRole("button", { name: "Start onboarding" }));
+        expect(await screen.findByText("Verification in progress")).toBeInTheDocument();
+        expect(fetch).toHaveBeenCalledWith(
+            expect.objectContaining({
+                method: "POST",
+                url: expect.stringContaining("/accounts/account-1/onboarding"),
+            }),
+        );
+        await browser.click(screen.getByRole("link", { name: "All accounts" }));
+        expect(await screen.findByRole("link", { name: "Open North Studio" })).toBeInTheDocument();
+    });
+
+    it("shows creation errors and lets the user retry", async () => {
+        let attempts = 0;
+        vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+            const url = new URL((input as Request).url);
+            if (url.pathname.endsWith("/accounts/create")) {
+                attempts++;
+                return attempts === 1
+                    ? json({ code: "USER_NOT_ACTIVATED" }, 403)
+                    : json(accounts[0]);
+            }
+            if (url.pathname.endsWith("/accounts/account-1")) return json(accounts[0]);
+            if (url.pathname.endsWith("/accounts/account-1/onboarding"))
+                return json({ status: "NOT_STARTED", canOnboard: true, url: null });
+            return json({ items: [], page: 1, pageSize: 12, totalItems: 0, totalPages: 0 });
+        });
+        mount();
+        const browser = userEvent.setup();
+        await screen.findByRole("heading", { name: "No accounts yet" });
+        await browser.click(screen.getByRole("button", { name: "Create account" }));
+        await browser.click(screen.getByRole("button", { name: "Create account" }));
+        expect(await screen.findByRole("alert")).toHaveTextContent(
+            "Your account is not activated.",
+        );
+        expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+        await browser.click(screen.getByRole("button", { name: "Create account" }));
+        expect(
+            await screen.findByRole("heading", { name: "North Studio", level: 1 }),
+        ).toBeInTheDocument();
+        expect(attempts).toBe(2);
+    });
+
+    it("cancels or dismisses confirmation without creating an account", async () => {
+        const fetch = vi
+            .spyOn(globalThis, "fetch")
+            .mockResolvedValue(
+                json({ items: [], page: 1, pageSize: 12, totalItems: 0, totalPages: 0 }),
+            );
+        mount();
+        const browser = userEvent.setup();
+        await screen.findByRole("heading", { name: "No accounts yet" });
+        const opener = screen.getByRole("button", { name: "Create account" });
+        await browser.click(opener);
+        expect(screen.getByRole("button", { name: "Cancel" })).toHaveFocus();
+        await browser.click(screen.getByRole("button", { name: "Cancel" }));
+        expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+        expect(opener).toHaveFocus();
+        await browser.click(opener);
+        await browser.keyboard("{Escape}");
+        expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+        expect(opener).toHaveFocus();
+        expect(fetch.mock.calls.some(([input]) => (input as Request).method === "POST")).toBe(
+            false,
+        );
+    });
+
     it("changes theme and language in personal settings", async () => {
         vi.spyOn(globalThis, "fetch").mockResolvedValue(
             json({ items: [], page: 1, pageSize: 12, totalItems: 0, totalPages: 0 }),
@@ -99,6 +228,8 @@ describe("all accounts", () => {
                     totalPages: 1,
                 });
             if (url.pathname.endsWith("/accounts/account-2")) return json(accounts[1]);
+            if (url.pathname.endsWith("/accounts/account-2/onboarding"))
+                return json({ status: "COMPLETED", canOnboard: false, url: null });
             return json({}, 404);
         });
         mount();
@@ -118,7 +249,63 @@ describe("all accounts", () => {
         expect(
             await screen.findByRole("heading", { name: "West Works", level: 1 }),
         ).toBeInTheDocument();
+        expect(screen.getByText("Account overview")).toBeInTheDocument();
         expect(screen.getByRole("link", { name: "All accounts" })).toHaveAttribute("href", "/app");
+    });
+
+    it("attaches a confirmed bank before leaving setup", async () => {
+        vi.stubEnv("VITE_STRIPE_PUBLISHABLE_KEY", "pk_test_example");
+        const collect = vi
+            .fn()
+            .mockResolvedValueOnce({
+                error: { message: "Bank linking is unavailable for this account." },
+            })
+            .mockResolvedValueOnce({ setupIntent: { status: "requires_payment_method" } })
+            .mockResolvedValueOnce({
+                setupIntent: { id: "seti_test", status: "requires_confirmation" },
+            });
+        vi.mocked(loadStripe).mockResolvedValue({
+            collectBankAccountForSetup: collect,
+            confirmUsBankAccountSetup: vi.fn().mockResolvedValue({
+                setupIntent: { id: "seti_test", status: "succeeded" },
+            }),
+        } as unknown as Awaited<ReturnType<typeof loadStripe>>);
+        let externalAccountRequired = true;
+        vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+            const url = new URL((input as Request).url);
+            if (url.pathname.endsWith("/accounts/account-1")) return json(accounts[0]);
+            if (url.pathname.endsWith("/onboarding"))
+                return json({
+                    status: "COMPLETED",
+                    canOnboard: true,
+                    url: null,
+                    externalAccountRequired,
+                });
+            if (url.pathname.endsWith("/payout-bank-setup"))
+                return json({ clientSecret: "secret", name: "Test Company" });
+            if (url.pathname.endsWith("/payout-bank-setup/seti_test/complete")) {
+                externalAccountRequired = false;
+                return json({});
+            }
+            return json({}, 404);
+        });
+        try {
+            mount("/app/accounts/account-1");
+            const button = await screen.findByRole("button", { name: "Connect bank account" });
+            await userEvent.click(button);
+            expect(await screen.findByRole("alert")).toHaveTextContent(
+                "Connecting bank — Bank linking is unavailable for this account.",
+            );
+            await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+            await waitFor(() => expect(button).toBeEnabled());
+            expect(externalAccountRequired).toBe(true);
+            await userEvent.click(button);
+            expect(
+                await screen.findByRole("link", { name: "Manage bank accounts" }),
+            ).toBeInTheDocument();
+        } finally {
+            vi.unstubAllEnvs();
+        }
     });
 
     it("searches all memberships through the server and paginates results", async () => {

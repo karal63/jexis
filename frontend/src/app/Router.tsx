@@ -8,6 +8,7 @@ const ResetPasswordPage = lazy(() => import("@/pages/auth/ResetPasswordPage"));
 const AllAccountsPage = lazy(() => import("@/pages/accounts/AllAccountsPage"));
 const AccountPage = lazy(() => import("@/pages/accounts/AccountPage"));
 const SettingsPage = lazy(() => import("@/pages/settings/SettingsPage"));
+import { ActivationNotice } from "@/features/auth/ui/ActivationNotice";
 import { useAppSelector } from "./hooks";
 import { Button } from "@/shared/ui/button";
 import { PageLoader } from "@/shared/ui/page-loader";
@@ -16,6 +17,20 @@ import { useI18n } from "@/shared/i18n/useI18n";
 function RequireSession() {
     const status = useAppSelector((state) => state.session.status);
     return status === "authenticated" ? <Outlet /> : <Navigate to="/login" replace />;
+}
+
+function AccountLayout() {
+    const user = useAppSelector((state) => state.session.user);
+    if (!user || user.isActivated) return <Outlet />;
+
+    return (
+        <div className="grid h-dvh grid-rows-[auto_minmax(0,1fr)]">
+            <ActivationNotice className="border-b border-brand-leaf/30 bg-brand-leaf/15 px-5 py-2 text-accent-foreground sm:px-8" />
+            <div className="overflow-y-auto [&>main]:min-h-full">
+                <Outlet />
+            </div>
+        </div>
+    );
 }
 
 function GuestOnly() {
@@ -36,8 +51,18 @@ export default function Router() {
                     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 </Route>
                 <Route element={<RequireSession />}>
-                    <Route path="/app" element={<AllAccountsPage />} />
-                    <Route path="/app/accounts/:accountId" element={<AccountPage />} />
+                    <Route element={<AccountLayout />}>
+                        <Route path="/app" element={<AllAccountsPage />} />
+                        <Route path="/app/accounts/:accountId" element={<AccountPage />} />
+                        <Route
+                            path="/app/accounts/:accountId/external-account"
+                            element={<AccountPage bankAccountMode="setup" />}
+                        />
+                        <Route
+                            path="/app/accounts/:accountId/bank-accounts"
+                            element={<AccountPage bankAccountMode="manage" />}
+                        />
+                    </Route>
                     <Route path="/app/settings" element={<SettingsPage />} />
                 </Route>
                 <Route

@@ -20,6 +20,6 @@ public class GetUpdateLinkUseCase {
 
     public AccountLink execute(UUID accountId) {
         Account account = getAccountUseCase.execute(accountId);
-        return createLinkUseCase.execute(account.getConnectAccountId(), AccountLinkCreateParams.Type.ACCOUNT_UPDATE);
+        return createLinkUseCase.execute(account.getConnectAccountId(), accountId, AccountLinkCreateParams.Type.ACCOUNT_UPDATE);
     }
 }

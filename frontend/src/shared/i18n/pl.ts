@@ -93,6 +93,12 @@ export const pl: Record<TranslationKey, string> = {
     "home.signingOut": "Wylogowywanie…",
     "accounts.intro": "Wybierz konto, aby kontynuować.",
     "accounts.allAccounts": "Wszystkie konta",
+    "accounts.create": "Utwórz konto",
+    "accounts.creating": "Tworzenie konta…",
+    "accounts.createConfirmTitle": "Utworzyć nowe konto?",
+    "accounts.createConfirmDescription":
+        "Nowe konto firmowe zostanie utworzone z Twoim adresem e-mail. Będziesz jego właścicielem, a konto będzie korzystać z bezpłatnego planu.",
+    "accounts.cancelCreate": "Anuluj",
     "accounts.searchLabel": "Szukaj kont",
     "accounts.searchPlaceholder": "Szukaj po nazwie lub adresie e-mail",
     "accounts.loading": "Ładowanie kont…",
@@ -104,6 +110,26 @@ export const pl: Record<TranslationKey, string> = {
     "accounts.noMatchesText": "Spróbuj wyszukać inną nazwę lub adres e-mail.",
     "accounts.owner": "Właściciel",
     "accounts.untitled": "Konto bez nazwy",
+    "accounts.onboardingRequired":
+        "Ukończ konfigurację w Stripe, aby korzystać z funkcji finansowych tego konta.",
+    "accounts.onboardingContactAdmin":
+        "Poproś właściciela lub administratora konta o ukończenie konfiguracji w Stripe.",
+    "accounts.onboardingStart": "Rozpocznij konfigurację",
+    "accounts.onboardingContinue": "Kontynuuj konfigurację",
+    "accounts.onboardingPending": "Weryfikacja w toku",
+    "accounts.onboardingCheckStatus": "Sprawdź status",
+    "accounts.externalAccountTitle": "Dodaj konto bankowe",
+    "accounts.externalAccountDescription": "Połącz konto bankowe, aby otrzymywać wypłaty.",
+    "accounts.bankAccountConnect": "Połącz konto bankowe",
+    "accounts.bankAccountsManage": "Zarządzaj kontami bankowymi",
+    "accounts.bankAccountsDescription": "Wyświetl lub zmień konta bankowe do wypłat.",
+    "accounts.bankAccountUnavailable": "Konfiguracja konta bankowego jest obecnie niedostępna.",
+    "accounts.bankAccountLoadError":
+        "Nie udało się wczytać konfiguracji konta bankowego. Spróbuj ponownie.",
+    "accounts.externalAccountContactAdmin":
+        "Poproś administratora o dodanie konta bankowego do wypłat.",
+    "accounts.onboardingRestricted":
+        "Stripe nałożył ograniczenia na to konto. Skontaktuj się z pomocą techniczną.",
     "accounts.openNamed": "Otwórz {{name}}",
     "accounts.pagination": "Strony kont",
     "accounts.previous": "Poprzednia",
@@ -111,6 +137,10 @@ export const pl: Record<TranslationKey, string> = {
     "accounts.page": "Strona {{page}} z {{total}}",
     "accounts.accountOverview": "Przegląd konta",
     "settings.title": "Ustawienia",
+    "activation.message": "Twoje konto czeka na aktywację. Poproś o e-mail z linkiem aktywacyjnym.",
+    "activation.sendEmail": "Wyślij e-mail aktywacyjny",
+    "activation.emailSent":
+        "E-mail aktywacyjny został wysłany. Sprawdź skrzynkę odbiorczą i użyj najnowszego linku.",
     "settings.intro": "Zarządzaj swoimi danymi i preferencjami.",
     "settings.sections": "Sekcje ustawień",
     "settings.publicProfile": "Profil publiczny",

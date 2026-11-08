@@ -22,9 +22,9 @@ const accountUser = {
     updatedAt: "",
 };
 
-function mount() {
+function mount(user = accountUser) {
     const store = createAppStore();
-    store.dispatch(sessionReceived(accountUser));
+    store.dispatch(sessionReceived(user));
     render(
         <Provider store={store}>
             <MemoryRouter initialEntries={["/app/settings"]}>
@@ -36,6 +36,32 @@ function mount() {
 }
 
 describe("settings", () => {
+    it("resends the activation email and shares feedback with the account banner", async () => {
+        const fetch = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+            const request = input as Request;
+            if (request.url.endsWith("/me/activation-email")) {
+                return new Response(null, { status: 204 });
+            }
+            return new Response("Not found", { status: 404 });
+        });
+        const store = mount({ ...accountUser, isActivated: false });
+        const browser = userEvent.setup();
+
+        await browser.click(await screen.findByRole("button", { name: "Send activation email" }));
+        const confirmation = "Activation email sent. Check your inbox for the latest link.";
+        expect(await screen.findByText(confirmation)).toBeInTheDocument();
+        const request = fetch.mock.calls[0][0] as Request;
+        expect(request.url).toMatch(/\/me\/activation-email$/);
+        expect(request.method).toBe("POST");
+
+        await browser.click(screen.getAllByRole("link", { name: "All accounts" })[0]);
+        await screen.findByRole("heading", { name: "All accounts" });
+        expect(screen.getByText(confirmation)).toBeInTheDocument();
+
+        act(() => store.dispatch(sessionReceived(accountUser)));
+        expect(screen.queryByRole("button", { name: "Send activation email" })).toBeNull();
+    });
+
     it("switches between available tabs and leaves future sections disabled", async () => {
         vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("Not found", { status: 404 }));
         mount();

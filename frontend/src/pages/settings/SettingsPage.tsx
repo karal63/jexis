@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useRef, useState, type KeyboardEvent } from "react";
 import { Link } from "react-router-dom";
+import { ActivationNotice } from "@/features/auth/ui/ActivationNotice";
 import { useAppSelector } from "@/app/hooks";
 import { useI18n } from "@/shared/i18n/useI18n";
 import { cn } from "@/shared/lib/utils";
@@ -89,6 +90,8 @@ export default function SettingsPage() {
                         {t("settings.title")}
                     </h1>
                     <p className="mt-2 text-sm text-muted-foreground">{t("settings.intro")}</p>
+
+                    <ActivationNotice className="mt-4 rounded-lg border border-border bg-accent px-4 py-3" />
 
                     <div className="mt-6 grid min-w-0 gap-8 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-12">
                         <div className="flex min-w-0 gap-2 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible">

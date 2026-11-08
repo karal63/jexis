@@ -50,7 +50,7 @@ public class UserController {
     private final DtoHelper dtoHelper;
     private final ConfirmPasswordResetUseCase confirmPasswordResetUseCase;
     private final RequestPasswordChangeUseCase requestPasswordChangeUseCase;
-    private final SendActivationLinkUseCase sendActivationLinkUseCase;
+    private final ResendActivationLinkUseCase resendActivationLinkUseCase;
     private final ActivateUserUseCase activateUserUseCase;
     private final GetPaymentMethodsUseCase getPaymentMethodsUseCase;
     private final CreatePaymentMethodSetupUseCase createPaymentMethodSetupUseCase;
@@ -168,11 +168,17 @@ public class UserController {
         return ResponseEntity.ok("Password changed successfully.");
     }
 
+    @PostMapping("/me/activation-email")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resendActivationLink(@AuthenticationPrincipal AuthUser user) {
+        resendActivationLinkUseCase.execute(user.id());
+    }
+
     @GetMapping("/user/activate")
-    public ResponseEntity<Void> sendActivationLink(@RequestParam String token) {
+    public ResponseEntity<Void> activateUser(@RequestParam String token) {
         activateUserUseCase.execute(token);
 
-        String redirectUrl = "%s/dashboard".formatted(applicationOrigin);
+        String redirectUrl = applicationOrigin.replaceAll("/+$", "") + "/app";
         return ResponseEntity.status(302).location(URI.create(redirectUrl)).build();
     }
 

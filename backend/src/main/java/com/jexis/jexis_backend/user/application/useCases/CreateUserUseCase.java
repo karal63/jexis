@@ -1,7 +1,5 @@
 package com.jexis.jexis_backend.user.application.useCases;
 
-import java.security.SecureRandom;
-import java.util.HexFormat;
 import java.util.List;
 
 import com.jexis.jexis_backend.common.hashUtils.HashUtils;
@@ -36,7 +34,6 @@ public class CreateUserUseCase {
     private final UserWriteTransactions writes;
     private final AsyncLogger logger;
     private final Argon2PasswordEncoder argon = new Argon2PasswordEncoder(16, 32, 1, 60000, 10);
-    private final SecureRandom RANDOM = new SecureRandom();
     private final SendActivationLinkUseCase sendActivationLinkUseCase;
 
     /*
@@ -59,15 +56,13 @@ public class CreateUserUseCase {
             if (repo.findByEmail(body.getEmail()).isPresent()) throw new EmailExistsException();
             if (phoneNumber != null && repo.existsByPhoneNumber(phoneNumber)) throw new PhoneNumberExistsException();
 
-            byte[] bytes = new byte[32]; // 256 bits
-            RANDOM.nextBytes(bytes);
-            String activationToken = HexFormat.of().formatHex(bytes);
+            String activationToken = SendActivationLinkUseCase.generateToken();
             String hashedActivationLink = HashUtils.sha256(activationToken);
 
             String hashedPassword = argon.encode(body.getPassword());
 
             User savedUser = repo
-                    .saveAndFlush(new User(firstName, lastName, body.getEmail(), phoneNumber,
+                        .saveAndFlush(new User(firstName, lastName, body.getEmail(), phoneNumber,
                             hashedPassword, hashedActivationLink, roles));
 
             sendActivationLinkUseCase.execute(savedUser, activationToken);
