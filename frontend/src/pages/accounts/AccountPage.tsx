@@ -1,6 +1,5 @@
 import { useEffect } from "react";
-import { ArrowLeft, Building2 } from "lucide-react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Navigate, useParams } from "react-router-dom";
 import {
     accountName,
     useAccountQuery,
@@ -116,6 +115,7 @@ function AccountOverview({
     if (!accountError && name && notStarted) {
         return (
             <CenteredPage
+                embedded
                 title={name}
                 description={onboardingDescription}
                 backTo="/app"
@@ -127,84 +127,83 @@ function AccountOverview({
     }
 
     return (
-        <main className="min-h-screen bg-background px-5 py-10 text-foreground sm:px-8">
-            <div className="mx-auto max-w-6xl">
-                <Link
-                    to="/app"
-                    className="inline-flex items-center gap-2 text-sm font-semibold text-brand-leaf hover:underline"
-                >
-                    <ArrowLeft size={16} />
-                    {t("accounts.allAccounts")}
-                </Link>
-                {accountError ? (
-                    <div className="mt-12 rounded-lg border border-danger-line bg-danger-bg p-8">
-                        <p role="alert" className="text-danger">
-                            {getApiError(accountError, t).message}
-                        </p>
-                        <Button
-                            className="mt-4"
-                            onClick={() => {
-                                void refetch();
-                                void refreshStatus();
-                            }}
-                        >
-                            {t("accounts.retry")}
-                        </Button>
-                    </div>
-                ) : account ? (
-                    <section className="mt-12 rounded-lg border border-border bg-card p-8">
-                        <span className="grid size-12 place-items-center rounded-lg bg-accent text-brand-leaf">
-                            <Building2 size={23} />
-                        </span>
-                        {status === "COMPLETED" && (
-                            <p className="mt-7 text-xs font-bold uppercase tracking-[.14em] text-brand-leaf">
-                                {t("accounts.accountOverview")}
-                            </p>
-                        )}
-                        <h1 className="mt-2 font-display text-3xl font-bold">{name}</h1>
-                        {account.email && (
-                            <p className="mt-2 text-sm text-muted-foreground">{account.email}</p>
-                        )}
+        <>
+            {accountError ? (
+                <div className="rounded-lg border border-danger-line bg-danger-bg p-6">
+                    <p role="alert" className="text-danger">
+                        {getApiError(accountError, t).message}
+                    </p>
+                    <Button
+                        className="mt-4"
+                        onClick={() => {
+                            void refetch();
+                            void refreshStatus();
+                        }}
+                    >
+                        {t("accounts.retry")}
+                    </Button>
+                </div>
+            ) : account ? (
+                <section aria-labelledby="account-title">
+                    <div className="flex flex-wrap items-end justify-between gap-4 border-b pb-6">
+                        <div className="min-w-0">
+                            {status === "COMPLETED" && (
+                                <p className="mb-2 text-sm text-muted-foreground">
+                                    {t("accounts.accountOverview")}
+                                </p>
+                            )}
+                            <h1
+                                id="account-title"
+                                className="wrap-anywhere font-display text-3xl font-bold tracking-tight"
+                            >
+                                {name}
+                            </h1>
+                            {account.email && (
+                                <p className="mt-2 wrap-anywhere text-sm text-muted-foreground">
+                                    {account.email}
+                                </p>
+                            )}
+                        </div>
                         {status === "COMPLETED" && canOnboard && (
-                            <Button className="mt-4" to={`${accountPath}/bank-accounts`}>
+                            <Button variant="secondary" to={`${accountPath}/bank-accounts`}>
                                 {t("accounts.bankAccountsManage")}
                             </Button>
                         )}
-                        {needsExternalAccount && !canOnboard && (
+                    </div>
+                    {needsExternalAccount && !canOnboard && (
+                        <p className="mt-4 text-sm text-muted-foreground">
+                            {t("accounts.externalAccountContactAdmin")}
+                        </p>
+                    )}
+                    {status === "ACTION_REQUIRED" && (
+                        <>
                             <p className="mt-4 text-sm text-muted-foreground">
-                                {t("accounts.externalAccountContactAdmin")}
+                                {onboardingDescription}
                             </p>
-                        )}
-                        {status === "ACTION_REQUIRED" && (
-                            <>
-                                <p className="mt-4 text-sm text-muted-foreground">
-                                    {onboardingDescription}
-                                </p>
-                                {onboardingAction}
-                            </>
-                        )}
-                        {status === "PENDING_VERIFICATION" && (
-                            <>
-                                <p role="status" className="mt-4 text-sm text-muted-foreground">
-                                    {t("accounts.onboardingPending")}
-                                </p>
-                                <Button
-                                    variant="secondary"
-                                    className="mt-4"
-                                    onClick={() => void refreshStatus()}
-                                >
-                                    {t("accounts.onboardingCheckStatus")}
-                                </Button>
-                            </>
-                        )}
-                        {status === "RESTRICTED" && (
+                            {onboardingAction}
+                        </>
+                    )}
+                    {status === "PENDING_VERIFICATION" && (
+                        <>
                             <p role="status" className="mt-4 text-sm text-muted-foreground">
-                                {t("accounts.onboardingRestricted")}
+                                {t("accounts.onboardingPending")}
                             </p>
-                        )}
-                    </section>
-                ) : null}
-            </div>
-        </main>
+                            <Button
+                                variant="secondary"
+                                className="mt-4"
+                                onClick={() => void refreshStatus()}
+                            >
+                                {t("accounts.onboardingCheckStatus")}
+                            </Button>
+                        </>
+                    )}
+                    {status === "RESTRICTED" && (
+                        <p role="status" className="mt-4 text-sm text-muted-foreground">
+                            {t("accounts.onboardingRestricted")}
+                        </p>
+                    )}
+                </section>
+            ) : null}
+        </>
     );
 }

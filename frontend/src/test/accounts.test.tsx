@@ -1,6 +1,6 @@
 import { loadStripe } from "@stripe/stripe-js/pure";
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { MemoryRouter } from "react-router-dom";
@@ -126,7 +126,12 @@ describe("all accounts", () => {
                 url: expect.stringContaining("/accounts/account-1/onboarding"),
             }),
         );
-        await browser.click(screen.getByRole("link", { name: "All accounts" }));
+        await browser.click(screen.getByRole("button", { name: "Switch account" }));
+        await browser.click(
+            within(screen.getByRole("dialog", { name: "Switch account" })).getByRole("link", {
+                name: "All accounts",
+            }),
+        );
         expect(await screen.findByRole("link", { name: "Open North Studio" })).toBeInTheDocument();
     });
 
@@ -250,7 +255,60 @@ describe("all accounts", () => {
             await screen.findByRole("heading", { name: "West Works", level: 1 }),
         ).toBeInTheDocument();
         expect(screen.getByText("Account overview")).toBeInTheDocument();
-        expect(screen.getByRole("link", { name: "All accounts" })).toHaveAttribute("href", "/app");
+        await userEvent.click(screen.getByRole("button", { name: "Switch account" }));
+        expect(
+            within(screen.getByRole("dialog", { name: "Switch account" })).getByRole("link", {
+                name: "All accounts",
+            }),
+        ).toHaveAttribute("href", "/app");
+    });
+
+    it("switches between available accounts from the sidebar", async () => {
+        vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+            const url = new URL((input as Request).url);
+            if (url.pathname.endsWith("/accounts/me"))
+                return json({
+                    items: accounts,
+                    page: 1,
+                    pageSize: 12,
+                    totalItems: 2,
+                    totalPages: 1,
+                });
+            if (url.pathname.endsWith("/accounts/account-1")) return json(accounts[0]);
+            if (url.pathname.endsWith("/accounts/account-2")) return json(accounts[1]);
+            if (url.pathname.endsWith("/onboarding"))
+                return json({ status: "COMPLETED", canOnboard: false, url: null });
+            return json({}, 404);
+        });
+        mount("/app/accounts/account-1");
+
+        await screen.findByRole("heading", { name: "North Studio" });
+        await userEvent.click(screen.getByRole("button", { name: "Switch account" }));
+        const menu = await screen.findByRole("dialog", { name: "Switch account" });
+        await userEvent.click(await within(menu).findByRole("link", { name: "West Works" }));
+        expect(await screen.findByRole("heading", { name: "West Works" })).toBeInTheDocument();
+    });
+
+    it("keeps the workspace navigation on an account child route", async () => {
+        vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+            const url = new URL((input as Request).url);
+            if (url.pathname.endsWith("/accounts/account-1")) return json(accounts[0]);
+            if (url.pathname.endsWith("/onboarding"))
+                return json({
+                    status: "COMPLETED",
+                    canOnboard: true,
+                    url: null,
+                    externalAccountRequired: false,
+                });
+            return json({}, 404);
+        });
+        mount("/app/accounts/account-1/bank-accounts");
+
+        expect(
+            await screen.findByRole("heading", { name: "Manage bank accounts" }),
+        ).toBeInTheDocument();
+        expect(screen.getByRole("navigation", { name: "Account overview" })).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Toggle sidebar" })).toBeInTheDocument();
     });
 
     it("attaches a confirmed bank before leaving setup", async () => {

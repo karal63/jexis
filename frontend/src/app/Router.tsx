@@ -7,6 +7,7 @@ const ForgotPasswordPage = lazy(() => import("@/pages/auth/ForgotPasswordPage"))
 const ResetPasswordPage = lazy(() => import("@/pages/auth/ResetPasswordPage"));
 const AllAccountsPage = lazy(() => import("@/pages/accounts/AllAccountsPage"));
 const AccountPage = lazy(() => import("@/pages/accounts/AccountPage"));
+const AccountWorkspaceLayout = lazy(() => import("@/pages/accounts/AccountWorkspaceLayout"));
 const SettingsPage = lazy(() => import("@/pages/settings/SettingsPage"));
 import { ActivationNotice } from "@/features/auth/ui/ActivationNotice";
 import { useAppSelector } from "./hooks";
@@ -26,7 +27,7 @@ function AccountLayout() {
     return (
         <div className="grid h-dvh grid-rows-[auto_minmax(0,1fr)]">
             <ActivationNotice className="border-b border-brand-leaf/30 bg-brand-leaf/15 px-5 py-2 text-accent-foreground sm:px-8" />
-            <div className="overflow-y-auto [&>main]:min-h-full">
+            <div className="overflow-y-auto [&>main]:min-h-full [&>[data-workspace-shell]]:h-full">
                 <Outlet />
             </div>
         </div>
@@ -53,15 +54,17 @@ export default function Router() {
                 <Route element={<RequireSession />}>
                     <Route element={<AccountLayout />}>
                         <Route path="/app" element={<AllAccountsPage />} />
-                        <Route path="/app/accounts/:accountId" element={<AccountPage />} />
-                        <Route
-                            path="/app/accounts/:accountId/external-account"
-                            element={<AccountPage bankAccountMode="setup" />}
-                        />
-                        <Route
-                            path="/app/accounts/:accountId/bank-accounts"
-                            element={<AccountPage bankAccountMode="manage" />}
-                        />
+                        <Route path="/app/accounts/:accountId" element={<AccountWorkspaceLayout />}>
+                            <Route index element={<AccountPage />} />
+                            <Route
+                                path="external-account"
+                                element={<AccountPage bankAccountMode="setup" />}
+                            />
+                            <Route
+                                path="bank-accounts"
+                                element={<AccountPage bankAccountMode="manage" />}
+                            />
+                        </Route>
                     </Route>
                     <Route path="/app/settings" element={<SettingsPage />} />
                 </Route>

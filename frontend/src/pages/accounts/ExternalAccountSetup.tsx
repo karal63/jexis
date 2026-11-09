@@ -112,6 +112,7 @@ export default function ExternalAccountSetup({
 
     return (
         <CenteredPage
+            embedded
             title={t(manage ? "accounts.bankAccountsManage" : "accounts.externalAccountTitle")}
             description={t(
                 manage ? "accounts.bankAccountsDescription" : "accounts.externalAccountDescription",
