@@ -120,18 +120,16 @@ describe("all accounts", () => {
         ).toBeInTheDocument();
         await browser.click(screen.getByRole("button", { name: "Start onboarding" }));
         expect(await screen.findByText("Verification in progress")).toBeInTheDocument();
+        expect(
+            screen.queryByRole("navigation", { name: "Account overview" }),
+        ).not.toBeInTheDocument();
         expect(fetch).toHaveBeenCalledWith(
             expect.objectContaining({
                 method: "POST",
                 url: expect.stringContaining("/accounts/account-1/onboarding"),
             }),
         );
-        await browser.click(screen.getByRole("button", { name: "Switch account" }));
-        await browser.click(
-            within(screen.getByRole("dialog", { name: "Switch account" })).getByRole("link", {
-                name: "All accounts",
-            }),
-        );
+        await browser.click(screen.getByRole("link", { name: "All accounts" }));
         expect(await screen.findByRole("link", { name: "Open North Studio" })).toBeInTheDocument();
     });
 
@@ -289,7 +287,7 @@ describe("all accounts", () => {
         expect(await screen.findByRole("heading", { name: "West Works" })).toBeInTheDocument();
     });
 
-    it("keeps the workspace navigation on an account child route", async () => {
+    it("keeps bank account management free of workspace navigation", async () => {
         vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
             const url = new URL((input as Request).url);
             if (url.pathname.endsWith("/accounts/account-1")) return json(accounts[0]);
@@ -307,8 +305,10 @@ describe("all accounts", () => {
         expect(
             await screen.findByRole("heading", { name: "Manage bank accounts" }),
         ).toBeInTheDocument();
-        expect(screen.getByRole("navigation", { name: "Account overview" })).toBeInTheDocument();
-        expect(screen.getByRole("button", { name: "Toggle sidebar" })).toBeInTheDocument();
+        expect(
+            screen.queryByRole("navigation", { name: "Account overview" }),
+        ).not.toBeInTheDocument();
+        expect(screen.queryByRole("button", { name: "Toggle sidebar" })).not.toBeInTheDocument();
     });
 
     it("attaches a confirmed bank before leaving setup", async () => {
@@ -358,9 +358,11 @@ describe("all accounts", () => {
             await waitFor(() => expect(button).toBeEnabled());
             expect(externalAccountRequired).toBe(true);
             await userEvent.click(button);
-            expect(
-                await screen.findByRole("link", { name: "Manage bank accounts" }),
-            ).toBeInTheDocument();
+            await waitFor(() =>
+                expect(
+                    screen.getByRole("link", { name: "Manage bank accounts" }),
+                ).toBeInTheDocument(),
+            );
         } finally {
             vi.unstubAllEnvs();
         }

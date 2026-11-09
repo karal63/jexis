@@ -56,15 +56,15 @@ export default function Router() {
                         <Route path="/app" element={<AllAccountsPage />} />
                         <Route path="/app/accounts/:accountId" element={<AccountWorkspaceLayout />}>
                             <Route index element={<AccountPage />} />
-                            <Route
-                                path="external-account"
-                                element={<AccountPage bankAccountMode="setup" />}
-                            />
-                            <Route
-                                path="bank-accounts"
-                                element={<AccountPage bankAccountMode="manage" />}
-                            />
                         </Route>
+                        <Route
+                            path="/app/accounts/:accountId/external-account"
+                            element={<AccountPage bankAccountMode="setup" />}
+                        />
+                        <Route
+                            path="/app/accounts/:accountId/bank-accounts"
+                            element={<AccountPage bankAccountMode="manage" />}
+                        />
                     </Route>
                     <Route path="/app/settings" element={<SettingsPage />} />
                 </Route>

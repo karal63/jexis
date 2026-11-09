@@ -38,7 +38,7 @@ function AccountOverview({
 
     const onboarding = useAccountOnboardingQuery(accountId, {
         skip: !accountId,
-        refetchOnMountOrArgChange: true,
+        refetchOnMountOrArgChange: !bankAccountMode,
     });
     const [
         createLink,
@@ -112,16 +112,36 @@ function AccountOverview({
         }
     }
 
-    if (!accountError && name && notStarted) {
+    if (!accountError && name && (notStarted || status === "ACTION_REQUIRED")) {
         return (
             <CenteredPage
-                embedded
                 title={name}
                 description={onboardingDescription}
                 backTo="/app"
                 backLabel={t("accounts.allAccounts")}
             >
                 {onboardingAction}
+            </CenteredPage>
+        );
+    }
+
+    if (!accountError && name && (status === "PENDING_VERIFICATION" || status === "RESTRICTED")) {
+        return (
+            <CenteredPage
+                title={name}
+                description={t(
+                    status === "PENDING_VERIFICATION"
+                        ? "accounts.onboardingPending"
+                        : "accounts.onboardingRestricted",
+                )}
+                backTo="/app"
+                backLabel={t("accounts.allAccounts")}
+            >
+                {status === "PENDING_VERIFICATION" && (
+                    <Button variant="secondary" onClick={() => void refreshStatus()}>
+                        {t("accounts.onboardingCheckStatus")}
+                    </Button>
+                )}
             </CenteredPage>
         );
     }
@@ -173,33 +193,6 @@ function AccountOverview({
                     {needsExternalAccount && !canOnboard && (
                         <p className="mt-4 text-sm text-muted-foreground">
                             {t("accounts.externalAccountContactAdmin")}
-                        </p>
-                    )}
-                    {status === "ACTION_REQUIRED" && (
-                        <>
-                            <p className="mt-4 text-sm text-muted-foreground">
-                                {onboardingDescription}
-                            </p>
-                            {onboardingAction}
-                        </>
-                    )}
-                    {status === "PENDING_VERIFICATION" && (
-                        <>
-                            <p role="status" className="mt-4 text-sm text-muted-foreground">
-                                {t("accounts.onboardingPending")}
-                            </p>
-                            <Button
-                                variant="secondary"
-                                className="mt-4"
-                                onClick={() => void refreshStatus()}
-                            >
-                                {t("accounts.onboardingCheckStatus")}
-                            </Button>
-                        </>
-                    )}
-                    {status === "RESTRICTED" && (
-                        <p role="status" className="mt-4 text-sm text-muted-foreground">
-                            {t("accounts.onboardingRestricted")}
                         </p>
                     )}
                 </section>

@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { Link, Outlet, useParams } from "react-router-dom";
 import { useAppSelector } from "@/app/hooks";
-import { accountName, useAccountQuery } from "@/features/accounts";
+import { accountName, useAccountOnboardingQuery, useAccountQuery } from "@/features/accounts";
 import { useI18n } from "@/shared/i18n/useI18n";
 import { AccountSwitcher } from "@/shared/ui/account-switcher";
 import { WorkspaceShell, WorkspaceSidebar } from "@/shared/ui/workspace-shell";
@@ -19,12 +19,17 @@ export default function AccountWorkspaceLayout() {
     const { t } = useI18n();
     const user = useAppSelector((state) => state.session.user);
     const { data: account } = useAccountQuery(accountId, { skip: !accountId });
+    const { currentData: onboarding } = useAccountOnboardingQuery(accountId, {
+        skip: !accountId,
+    });
     const name = account && (accountName(account) || t("accounts.untitled"));
     const accountPath = `/app/accounts/${accountId}`;
     const initials =
         [user?.firstName?.[0], user?.lastName?.[0]].filter(Boolean).join("").toUpperCase() ||
         user?.email?.[0]?.toUpperCase() ||
         "?";
+
+    if (onboarding?.status !== "COMPLETED") return <Outlet />;
 
     return (
         <WorkspaceShell
