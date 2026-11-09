@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Building2, ChevronRight, Cog, Leaf, LogOut, Plus, Search } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useLogoutMutation } from "@/features/auth";
 import { accountName, useCreateAccountMutation, useMyAccountsQuery } from "@/features/accounts";
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
@@ -12,6 +12,7 @@ import { useI18n } from "@/shared/i18n/useI18n";
 
 export default function AllAccountsPage() {
     const { t } = useI18n();
+    const location = useLocation();
     const navigate = useNavigate();
     const [createAccount, { isLoading: creatingAccount, error: createError, reset: resetCreate }] =
         useCreateAccountMutation();
@@ -257,6 +258,7 @@ export default function AllAccountsPage() {
                     </button>
                     <Link
                         to="/app/settings"
+                        state={{ from: location.pathname + location.search + location.hash }}
                         aria-label={t("settings.title")}
                         title={t("settings.title")}
                         className="grid size-9 shrink-0 place-items-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"

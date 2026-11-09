@@ -14,19 +14,23 @@ import { useI18n } from "@/shared/i18n/useI18n";
 
 import ExternalAccountSetup from "./ExternalAccountSetup";
 
-export default function AccountPage({ bankAccountMode }: { bankAccountMode?: "setup" | "manage" }) {
+export default function AccountPage({ bankAccountSetup = false }: { bankAccountSetup?: boolean }) {
     const { accountId = "" } = useParams();
     return (
-        <AccountOverview key={accountId} accountId={accountId} bankAccountMode={bankAccountMode} />
+        <AccountOverview
+            key={accountId}
+            accountId={accountId}
+            bankAccountSetup={bankAccountSetup}
+        />
     );
 }
 
 function AccountOverview({
     accountId,
-    bankAccountMode,
+    bankAccountSetup,
 }: {
     accountId: string;
-    bankAccountMode?: "setup" | "manage";
+    bankAccountSetup: boolean;
 }) {
     const { t } = useI18n();
     const {
@@ -38,7 +42,7 @@ function AccountOverview({
 
     const onboarding = useAccountOnboardingQuery(accountId, {
         skip: !accountId,
-        refetchOnMountOrArgChange: !bankAccountMode,
+        refetchOnMountOrArgChange: !bankAccountSetup,
     });
     const [
         createLink,
@@ -92,17 +96,9 @@ function AccountOverview({
     const accountPath = `/app/accounts/${accountId}`;
 
     if (!accountError && account) {
-        if (bankAccountMode) {
-            const manage = bankAccountMode === "manage";
-            return status === "COMPLETED" &&
-                canOnboard &&
-                (manage ? !needsExternalAccount : needsExternalAccount) ? (
-                <ExternalAccountSetup
-                    key={bankAccountMode}
-                    accountId={accountId}
-                    manage={manage}
-                    onExit={() => void refreshStatus()}
-                />
+        if (bankAccountSetup) {
+            return needsExternalAccount && canOnboard ? (
+                <ExternalAccountSetup accountId={accountId} onExit={() => void refreshStatus()} />
             ) : (
                 <Navigate to={accountPath} replace />
             );
@@ -165,29 +161,22 @@ function AccountOverview({
                 </div>
             ) : account ? (
                 <section aria-labelledby="account-title">
-                    <div className="flex flex-wrap items-end justify-between gap-4 border-b pb-6">
-                        <div className="min-w-0">
-                            {status === "COMPLETED" && (
-                                <p className="mb-2 text-sm text-muted-foreground">
-                                    {t("accounts.accountOverview")}
-                                </p>
-                            )}
-                            <h1
-                                id="account-title"
-                                className="wrap-anywhere font-display text-3xl font-bold tracking-tight"
-                            >
-                                {name}
-                            </h1>
-                            {account.email && (
-                                <p className="mt-2 wrap-anywhere text-sm text-muted-foreground">
-                                    {account.email}
-                                </p>
-                            )}
-                        </div>
-                        {status === "COMPLETED" && canOnboard && (
-                            <Button variant="secondary" to={`${accountPath}/bank-accounts`}>
-                                {t("accounts.bankAccountsManage")}
-                            </Button>
+                    <div className="border-b pb-6">
+                        {status === "COMPLETED" && (
+                            <p className="mb-2 text-sm text-muted-foreground">
+                                {t("accounts.accountOverview")}
+                            </p>
+                        )}
+                        <h1
+                            id="account-title"
+                            className="wrap-anywhere font-display text-3xl font-bold tracking-tight"
+                        >
+                            {name}
+                        </h1>
+                        {account.email && (
+                            <p className="mt-2 wrap-anywhere text-sm text-muted-foreground">
+                                {account.email}
+                            </p>
                         )}
                     </div>
                     {needsExternalAccount && !canOnboard && (

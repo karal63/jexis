@@ -54,7 +54,7 @@ describe("settings", () => {
         expect(request.url).toMatch(/\/me\/activation-email$/);
         expect(request.method).toBe("POST");
 
-        await browser.click(screen.getAllByRole("link", { name: "All accounts" })[0]);
+        await browser.click(screen.getByRole("link", { name: "Back" }));
         await screen.findByRole("heading", { name: "All accounts" });
         expect(screen.getByText(confirmation)).toBeInTheDocument();
 

@@ -8,7 +8,7 @@ import {
     UserRound,
 } from "lucide-react";
 import { useRef, useState, type KeyboardEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { ActivationNotice } from "@/features/auth/ui/ActivationNotice";
 import { useAppSelector } from "@/app/hooks";
 import { useI18n } from "@/shared/i18n/useI18n";
@@ -26,6 +26,16 @@ const tabOrder = SETTINGS_TABS.map((tab) => tab.id);
 
 export default function SettingsPage() {
     const { t } = useI18n();
+    const location = useLocation();
+    const previousPage = (location.state as { from?: unknown } | null)?.from;
+    const backTo =
+        typeof previousPage === "string" &&
+        (previousPage === "/app" ||
+            previousPage.startsWith("/app/") ||
+            previousPage.startsWith("/app?")) &&
+        previousPage !== location.pathname
+            ? previousPage
+            : "/app";
     const user = useAppSelector((state) => state.session.user);
     const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
     const tabRefs = useRef<Partial<Record<SettingsTab, HTMLButtonElement | null>>>({});
@@ -77,11 +87,11 @@ export default function SettingsPage() {
                         jexis
                     </Link>
                     <Link
-                        to="/app"
+                        to={backTo}
                         className="inline-flex items-center gap-2 text-xs font-semibold text-brand-leaf hover:underline"
                     >
                         <ArrowLeft aria-hidden="true" size={14} />
-                        {t("accounts.allAccounts")}
+                        {t("settings.back")}
                     </Link>
                 </header>
 

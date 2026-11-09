@@ -7,6 +7,7 @@ const ForgotPasswordPage = lazy(() => import("@/pages/auth/ForgotPasswordPage"))
 const ResetPasswordPage = lazy(() => import("@/pages/auth/ResetPasswordPage"));
 const AllAccountsPage = lazy(() => import("@/pages/accounts/AllAccountsPage"));
 const AccountPage = lazy(() => import("@/pages/accounts/AccountPage"));
+const AccountSettingsPage = lazy(() => import("@/pages/accounts/AccountSettingsPage"));
 const AccountWorkspaceLayout = lazy(() => import("@/pages/accounts/AccountWorkspaceLayout"));
 const SettingsPage = lazy(() => import("@/pages/settings/SettingsPage"));
 import { ActivationNotice } from "@/features/auth/ui/ActivationNotice";
@@ -56,14 +57,15 @@ export default function Router() {
                         <Route path="/app" element={<AllAccountsPage />} />
                         <Route path="/app/accounts/:accountId" element={<AccountWorkspaceLayout />}>
                             <Route index element={<AccountPage />} />
+                            <Route path="settings" element={<AccountSettingsPage />} />
                         </Route>
                         <Route
                             path="/app/accounts/:accountId/external-account"
-                            element={<AccountPage bankAccountMode="setup" />}
+                            element={<AccountPage bankAccountSetup />}
                         />
                         <Route
                             path="/app/accounts/:accountId/bank-accounts"
-                            element={<AccountPage bankAccountMode="manage" />}
+                            element={<Navigate to="../settings" relative="path" replace />}
                         />
                     </Route>
                     <Route path="/app/settings" element={<SettingsPage />} />

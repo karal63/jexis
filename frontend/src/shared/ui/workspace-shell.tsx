@@ -212,7 +212,7 @@ export function WorkspaceShell({
                 <div className="min-h-0 overflow-hidden">{sidebar(!sidebarOpen)}</div>
             </div>
             <main className="col-start-1 row-start-3 overflow-y-auto px-4 py-8 sm:px-6 md:col-start-2 md:row-start-2 lg:px-10 lg:py-12">
-                {children}
+                <div className="mx-auto w-full max-w-6xl">{children}</div>
             </main>
         </div>
     );

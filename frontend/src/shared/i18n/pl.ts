@@ -121,8 +121,6 @@ export const pl: Record<TranslationKey, string> = {
     "accounts.externalAccountTitle": "Dodaj konto bankowe",
     "accounts.externalAccountDescription": "Połącz konto bankowe, aby otrzymywać wypłaty.",
     "accounts.bankAccountConnect": "Połącz konto bankowe",
-    "accounts.bankAccountsManage": "Zarządzaj kontami bankowymi",
-    "accounts.bankAccountsDescription": "Wyświetl lub zmień konta bankowe do wypłat.",
     "accounts.bankAccountUnavailable": "Konfiguracja konta bankowego jest obecnie niedostępna.",
     "accounts.bankAccountLoadError":
         "Nie udało się wczytać konfiguracji konta bankowego. Spróbuj ponownie.",
@@ -151,7 +149,18 @@ export const pl: Record<TranslationKey, string> = {
     "accounts.navManagement": "Zarządzanie",
     "accounts.navTeam": "Zespół",
     "accounts.accountOverview": "Przegląd konta",
+    "accounts.profileMenu": "Menu profilu",
+    "accounts.userSettings": "Ustawienia użytkownika",
+    "accounts.accountSettings": "Ustawienia konta",
+    "accounts.theme": "Motyw",
+    "accounts.subscription": "Subskrypcja",
+    "accounts.settingsIntro": "Zarządzaj danymi konta Stripe i kontami bankowymi do wypłat.",
+    "accounts.settingsContactAdmin":
+        "Poproś właściciela lub administratora konta o zmianę ustawień Stripe.",
+    "accounts.settingsUnavailable": "Ustawienia Stripe są obecnie niedostępne.",
+    "accounts.settingsLoadError": "Nie udało się wczytać ustawień Stripe. Spróbuj ponownie.",
     "settings.title": "Ustawienia",
+    "settings.back": "Wróć",
     "activation.message": "Twoje konto czeka na aktywację. Poproś o e-mail z linkiem aktywacyjnym.",
     "activation.sendEmail": "Wyślij e-mail aktywacyjny",
     "activation.emailSent":
