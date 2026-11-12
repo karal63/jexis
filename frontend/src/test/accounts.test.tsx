@@ -195,6 +195,116 @@ describe("all accounts", () => {
         );
     });
 
+    it("confirms deletion, lets the owner retry a failure, and refreshes the account list", async () => {
+        let deleted = false;
+        let finishDeletion!: (response: Response) => void;
+        const deleteRequest = vi.fn(
+            () =>
+                new Promise<Response>((resolve) => {
+                    finishDeletion = resolve;
+                }),
+        );
+        vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+            const request = input as Request;
+            const { pathname } = new URL(request.url);
+            if (pathname.endsWith("/accounts/account-1/delete") && request.method === "POST")
+                return deleteRequest();
+            if (pathname.endsWith("/accounts/me"))
+                return json({
+                    items: deleted ? [] : [accounts[0]],
+                    page: 1,
+                    pageSize: 12,
+                    totalItems: deleted ? 0 : 1,
+                    totalPages: deleted ? 0 : 1,
+                });
+            if (deleted) return json({ code: "ACCOUNT_NOT_FOUND" }, 404);
+            if (pathname.endsWith("/accounts/account-1")) return json(accounts[0]);
+            if (pathname.endsWith("/onboarding"))
+                return json({ status: "COMPLETED", canOnboard: true, canDelete: true });
+            return json({}, 404);
+        });
+        vi.stubEnv("VITE_STRIPE_PUBLISHABLE_KEY", "");
+        try {
+            mount();
+            const browser = userEvent.setup();
+            await browser.click(await screen.findByRole("link", { name: "Open North Studio" }));
+            await browser.click(await screen.findByRole("button", { name: "Profile menu" }));
+            await browser.click(screen.getByRole("link", { name: "Account settings" }));
+
+            const trigger = await screen.findByRole("button", { name: "Delete account" });
+            await browser.click(trigger);
+            const dialog = within(
+                screen.getByRole("alertdialog", { name: "Delete this business account?" }),
+            );
+            expect(dialog.getByText(/Deleting North Studio will close/)).toBeInTheDocument();
+            expect(dialog.getByRole("button", { name: "Cancel" })).toHaveFocus();
+            await browser.click(dialog.getByRole("button", { name: "Cancel" }));
+            await waitFor(() => expect(trigger).toHaveFocus());
+            expect(deleteRequest).not.toHaveBeenCalled();
+
+            await browser.click(trigger);
+            const confirmation = within(screen.getByRole("alertdialog"));
+            await browser.click(confirmation.getByRole("button", { name: "Delete account" }));
+            const pending = confirmation.getByRole("button", { name: "Deleting account…" });
+            expect(pending).toBeDisabled();
+            await browser.keyboard("{Escape}");
+            expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+            await browser.click(pending);
+            expect(deleteRequest).toHaveBeenCalledTimes(1);
+            finishDeletion(json({ code: "FORBIDDEN" }, 403));
+            expect(await confirmation.findByRole("alert")).toHaveTextContent(
+                "You don’t have permission to do that.",
+            );
+
+            await browser.click(confirmation.getByRole("button", { name: "Delete account" }));
+            await waitFor(() => expect(deleteRequest).toHaveBeenCalledTimes(2));
+            deleted = true;
+            finishDeletion(new Response("Account has been deleted."));
+            expect(
+                await screen.findByRole("heading", { name: "No accounts yet" }),
+            ).toBeInTheDocument();
+        } finally {
+            vi.unstubAllEnvs();
+        }
+    });
+
+    it.each([
+        ["NOT_STARTED", false, true],
+        ["ACTION_REQUIRED", false, true],
+        ["PENDING_VERIFICATION", false, true],
+        ["RESTRICTED", false, true],
+        ["COMPLETED", true, true],
+        ["NOT_STARTED", false, false],
+        ["COMPLETED", true, false],
+    ])(
+        "uses deletion permission in %s (bank setup %s, can delete %s)",
+        async (status, externalAccountRequired, canDelete) => {
+            vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+                const { pathname } = new URL((input as Request).url);
+                if (pathname.endsWith("/accounts/account-1")) return json(accounts[0]);
+                if (pathname.endsWith("/onboarding"))
+                    return json({ status, canOnboard: true, canDelete, externalAccountRequired });
+                return json({}, 404);
+            });
+            mount(
+                externalAccountRequired
+                    ? "/app/accounts/account-1/external-account"
+                    : "/app/accounts/account-1",
+            );
+            await screen.findByRole("heading", {
+                name: externalAccountRequired ? "Add a bank account" : "North Studio",
+            });
+            expect(screen.queryByRole("button", { name: "Profile menu" })).not.toBeInTheDocument();
+            if (canDelete) {
+                expect(screen.getByRole("button", { name: "Delete account" })).toBeEnabled();
+            } else {
+                expect(
+                    screen.queryByRole("button", { name: "Delete account" }),
+                ).not.toBeInTheDocument();
+            }
+        },
+    );
+
     it("changes theme and language in personal settings", async () => {
         vi.spyOn(globalThis, "fetch").mockResolvedValue(
             json({ items: [], page: 1, pageSize: 12, totalItems: 0, totalPages: 0 }),

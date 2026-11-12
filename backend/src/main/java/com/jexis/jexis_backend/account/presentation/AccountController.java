@@ -155,13 +155,16 @@ public class AccountController {
     @GetMapping("/accounts/{accountId}/onboarding")
     @PreAuthorize("@accountAuthorization.canView(authentication.principal.id(), #accountId)")
     public AccountOnboardingDto getOnboarding(@PathVariable UUID accountId, @AuthenticationPrincipal AuthUser user) {
-        return accountOnboardingUseCase.getStatus(accountId, accountAuthorization.canEdit(user.id(), accountId));
+        boolean canDelete = accountAuthorization.canDelete(user.id(), accountId);
+        boolean canOnboard = canDelete || accountAuthorization.canEdit(user.id(), accountId);
+        return accountOnboardingUseCase.getStatus(accountId, canOnboard, canDelete);
     }
 
     @PostMapping("/accounts/{accountId}/onboarding")
     @PreAuthorize("@accountAuthorization.canEdit(authentication.principal.id(), #accountId)")
-    public AccountOnboardingDto createOnboardingLink(@PathVariable UUID accountId) {
-        return accountOnboardingUseCase.createLink(accountId);
+    public AccountOnboardingDto createOnboardingLink(
+            @PathVariable UUID accountId, @AuthenticationPrincipal AuthUser user) {
+        return accountOnboardingUseCase.createLink(accountId, accountAuthorization.canDelete(user.id(), accountId));
     }
 
     @GetMapping("/accounts/{accountId}/get-update-link")

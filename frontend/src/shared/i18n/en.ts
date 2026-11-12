@@ -158,6 +158,14 @@ export const en = {
     "accounts.settingsContactAdmin": "Ask an account owner or admin to manage Stripe settings.",
     "accounts.settingsUnavailable": "Stripe settings are currently unavailable.",
     "accounts.settingsLoadError": "Could not load Stripe settings. Please try again.",
+    "accounts.deleteTitle": "Account deletion",
+    "accounts.deleteDescription": "Permanently remove this business account from Jexis.",
+    "accounts.delete": "Delete account",
+    "accounts.deleteConfirmTitle": "Delete this business account?",
+    "accounts.deleteConfirmDescription":
+        "Deleting {{name}} will close its connected Stripe account and remove access for everyone on the team. This action cannot be undone.",
+    "accounts.deleteCancel": "Cancel",
+    "accounts.deleting": "Deleting account…",
     "settings.title": "Settings",
     "settings.back": "Back",
     "activation.message":

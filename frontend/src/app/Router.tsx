@@ -8,7 +8,7 @@ const ResetPasswordPage = lazy(() => import("@/pages/auth/ResetPasswordPage"));
 const AllAccountsPage = lazy(() => import("@/pages/accounts/AllAccountsPage"));
 const AccountPage = lazy(() => import("@/pages/accounts/AccountPage"));
 const AccountSettingsPage = lazy(() => import("@/pages/accounts/AccountSettingsPage"));
-const AccountWorkspaceLayout = lazy(() => import("@/pages/accounts/AccountWorkspaceLayout"));
+const AccountWorkspaceLayout = lazy(() => import("@/app/routes/accounts/AccountWorkspaceLayout"));
 const SettingsPage = lazy(() => import("@/pages/settings/SettingsPage"));
 import { ActivationNotice } from "@/features/auth/ui/ActivationNotice";
 import { useAppSelector } from "./hooks";

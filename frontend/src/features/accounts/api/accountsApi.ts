@@ -17,6 +17,7 @@ export const accountsApi = baseApi.injectEndpoints({
         }),
         accountOnboarding: builder.query<AccountOnboarding, string>({
             query: (id) => ({ url: `/accounts/${id}/onboarding`, cache: "no-store" }),
+            providesTags: (_result, _error, id) => [{ type: "Account", id }],
         }),
         createOnboardingLink: builder.mutation<AccountOnboarding, string>({
             query: (id) => ({ url: `/accounts/${id}/onboarding`, method: "POST" }),
@@ -42,6 +43,16 @@ export const accountsApi = baseApi.injectEndpoints({
         }),
         account: builder.query<Account, string>({
             query: (id) => `/accounts/${id}`,
+            providesTags: (_result, _error, id) => [{ type: "Account", id }],
+        }),
+        deleteAccount: builder.mutation<string, string>({
+            query: (id) => ({
+                url: `/accounts/${id}/delete`,
+                method: "POST",
+                responseHandler: "content-type",
+            }),
+            invalidatesTags: (_result, error, id) =>
+                error ? [] : ["Accounts", { type: "Account", id }],
         }),
     }),
 });
@@ -55,4 +66,5 @@ export const {
     useBankAccountSessionMutation,
     usePayoutBankSetupMutation,
     useCompletePayoutBankSetupMutation,
+    useDeleteAccountMutation,
 } = accountsApi;

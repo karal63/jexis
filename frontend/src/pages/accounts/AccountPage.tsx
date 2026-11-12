@@ -6,13 +6,13 @@ import {
     useAccountOnboardingQuery,
     useCreateOnboardingLinkMutation,
 } from "@/features/accounts";
+import { AccountDeletionSection } from "@/features/accounts/ui/AccountDeletionSection";
+import ExternalAccountSetup from "@/features/accounts/ui/ExternalAccountSetup";
 import { getApiError } from "@/shared/api/apiError";
 import { Button } from "@/shared/ui/button";
 import { CenteredPage } from "@/shared/ui/centered-page";
 import { PageLoader } from "@/shared/ui/page-loader";
 import { useI18n } from "@/shared/i18n/useI18n";
-
-import ExternalAccountSetup from "./ExternalAccountSetup";
 
 export default function AccountPage({ bankAccountSetup = false }: { bankAccountSetup?: boolean }) {
     const { accountId = "" } = useParams();
@@ -66,6 +66,7 @@ function AccountOverview({
 
     const status = onboarding.currentData?.status;
     const canOnboard = onboarding.currentData?.canOnboard;
+    const canDelete = onboarding.currentData?.canDelete ?? false;
     const notStarted = status === "NOT_STARTED";
     const accountError = error ?? onboarding.error;
 
@@ -94,11 +95,18 @@ function AccountOverview({
     const needsExternalAccount =
         status === "COMPLETED" && onboarding.currentData?.externalAccountRequired;
     const accountPath = `/app/accounts/${accountId}`;
+    const deletionSection = canDelete && (
+        <AccountDeletionSection accountId={accountId} disabled={creatingLink || Boolean(link)} />
+    );
 
     if (!accountError && account) {
         if (bankAccountSetup) {
             return needsExternalAccount && canOnboard ? (
-                <ExternalAccountSetup accountId={accountId} onExit={() => void refreshStatus()} />
+                <ExternalAccountSetup
+                    accountId={accountId}
+                    canDelete={canDelete}
+                    onExit={() => void refreshStatus()}
+                />
             ) : (
                 <Navigate to={accountPath} replace />
             );
@@ -117,6 +125,7 @@ function AccountOverview({
                 backLabel={t("accounts.allAccounts")}
             >
                 {onboardingAction}
+                {deletionSection}
             </CenteredPage>
         );
     }
@@ -138,6 +147,7 @@ function AccountOverview({
                         {t("accounts.onboardingCheckStatus")}
                     </Button>
                 )}
+                {deletionSection}
             </CenteredPage>
         );
     }

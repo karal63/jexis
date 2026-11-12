@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { useAccountOnboardingQuery, useBankAccountSessionMutation } from "@/features/accounts";
+import { AccountDeletionSection } from "@/features/accounts/ui/AccountDeletionSection";
 import { getApiError } from "@/shared/api/apiError";
 import { useI18n } from "@/shared/i18n/useI18n";
 import { Button } from "@/shared/ui/button";
@@ -65,6 +66,10 @@ export default function AccountSettingsPage() {
                     </p>
                 )}
             </div>
+
+            {!onboarding.error && status?.canDelete && (
+                <AccountDeletionSection key={accountId} accountId={accountId} />
+            )}
         </section>
     );
 }

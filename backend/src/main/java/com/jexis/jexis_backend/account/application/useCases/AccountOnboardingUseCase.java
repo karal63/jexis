@@ -21,20 +21,21 @@ public class AccountOnboardingUseCase {
     private final RetrieveAccountByIdUseCase retrieveAccountByIdUseCase;
     private final CreateLinkUseCase createLinkUseCase;
 
-    public AccountOnboardingDto getStatus(UUID accountId, boolean canOnboard) {
+    public AccountOnboardingDto getStatus(UUID accountId, boolean canOnboard, boolean canDelete) {
         Account account = retrieveAccountByIdUseCase.execute(
                 getAccountUseCase.execute(accountId).getConnectAccountId());
-        return new AccountOnboardingDto(resolveStatus(account), canOnboard, null, externalAccountRequired(account));
+        return new AccountOnboardingDto(
+                resolveStatus(account), canOnboard, null, externalAccountRequired(account), canDelete);
     }
 
-    public AccountOnboardingDto createLink(UUID accountId) {
+    public AccountOnboardingDto createLink(UUID accountId, boolean canDelete) {
         String connectAccountId = getAccountUseCase.execute(accountId).getConnectAccountId();
         Account account = retrieveAccountByIdUseCase.execute(connectAccountId);
         OnboardingStatus status = resolveStatus(account);
         String url = status.requiresOnboarding()
                 ? createLinkUseCase.execute(connectAccountId, accountId, AccountLinkCreateParams.Type.ACCOUNT_ONBOARDING).getUrl()
                 : null;
-        return new AccountOnboardingDto(status, true, url, externalAccountRequired(account));
+        return new AccountOnboardingDto(status, true, url, externalAccountRequired(account), canDelete);
     }
 
     static OnboardingStatus resolveStatus(Account account) {

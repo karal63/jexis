@@ -7,12 +7,15 @@ import {
 import { useI18n } from "@/shared/i18n/useI18n";
 import { Button } from "@/shared/ui/button";
 import { CenteredPage } from "@/shared/ui/centered-page";
+import { AccountDeletionSection } from "./AccountDeletionSection";
 
 export default function ExternalAccountSetup({
     accountId,
+    canDelete,
     onExit,
 }: {
     accountId: string;
+    canDelete: boolean;
     onExit: () => void;
 }) {
     const { t } = useI18n();
@@ -114,6 +117,7 @@ export default function ExternalAccountSetup({
                     </Button>
                 </>
             )}
+            {canDelete && <AccountDeletionSection accountId={accountId} disabled={busy} />}
         </CenteredPage>
     );
 }
