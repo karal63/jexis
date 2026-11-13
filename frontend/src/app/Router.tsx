@@ -6,6 +6,7 @@ const SignupPage = lazy(() => import("@/pages/auth/SignupPage"));
 const ForgotPasswordPage = lazy(() => import("@/pages/auth/ForgotPasswordPage"));
 const ResetPasswordPage = lazy(() => import("@/pages/auth/ResetPasswordPage"));
 const AllAccountsPage = lazy(() => import("@/pages/accounts/AllAccountsPage"));
+const AccountHome = lazy(() => import("@/app/routes/accounts/AccountHome"));
 const AccountPage = lazy(() => import("@/pages/accounts/AccountPage"));
 const AccountSettingsPage = lazy(() => import("@/pages/accounts/AccountSettingsPage"));
 const AccountWorkspaceLayout = lazy(() => import("@/app/routes/accounts/AccountWorkspaceLayout"));
@@ -54,7 +55,8 @@ export default function Router() {
                 </Route>
                 <Route element={<RequireSession />}>
                     <Route element={<AccountLayout />}>
-                        <Route path="/app" element={<AllAccountsPage />} />
+                        <Route path="/app" element={<AccountHome />} />
+                        <Route path="/app/accounts" element={<AllAccountsPage />} />
                         <Route path="/app/accounts/:accountId" element={<AccountWorkspaceLayout />}>
                             <Route index element={<AccountPage />} />
                             <Route path="settings" element={<AccountSettingsPage />} />

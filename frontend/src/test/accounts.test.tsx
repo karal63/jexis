@@ -1,6 +1,6 @@
 import { loadConnectAndInitialize } from "@stripe/connect-js/pure";
 import { loadStripe } from "@stripe/stripe-js/pure";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
@@ -53,7 +53,7 @@ const accounts = [
 const json = (data: unknown, status = 200) =>
     new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
 
-function mount(path = "/app") {
+function mount(path = "/app/accounts") {
     const store = createAppStore();
     store.dispatch(sessionReceived(user));
     render(
@@ -64,6 +64,76 @@ function mount(path = "/app") {
         </Provider>,
     );
 }
+
+describe("app entry", () => {
+    beforeEach(() => localStorage.removeItem("lastVisitedAccount:user-1"));
+
+    it("shows the account list when several accounts exist and none was visited", async () => {
+        vi.spyOn(globalThis, "fetch").mockResolvedValue(
+            json({ items: accounts, totalItems: 2, totalPages: 1 }),
+        );
+        mount("/app");
+        expect(await screen.findByRole("heading", { name: "All accounts" })).toBeInTheDocument();
+    });
+
+    it("opens the only account directly and remembers it for the next visit", async () => {
+        vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+            const pathname = new URL((input as Request).url).pathname;
+            if (pathname.endsWith("/accounts/me"))
+                return json({ items: [accounts[0]], totalItems: 1, totalPages: 1 });
+            if (pathname.endsWith("/accounts/account-1/onboarding"))
+                return json({ status: "COMPLETED", canOnboard: false });
+            if (pathname.endsWith("/accounts/account-1")) return json(accounts[0]);
+            return json({}, 404);
+        });
+        mount("/app");
+        expect(await screen.findByRole("heading", { name: "North Studio" })).toBeInTheDocument();
+        await waitFor(() =>
+            expect(localStorage.getItem("lastVisitedAccount:user-1")).toBe("account-1"),
+        );
+    });
+
+    it("opens the remembered account when several accounts exist", async () => {
+        localStorage.setItem("lastVisitedAccount:user-1", "account-2");
+        const fetch = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+            const pathname = new URL((input as Request).url).pathname;
+            if (pathname.endsWith("/accounts/account-2/onboarding"))
+                return json({ status: "COMPLETED", canOnboard: false });
+            if (pathname.endsWith("/accounts/account-2")) return json(accounts[1]);
+            return json({}, 404);
+        });
+        mount("/app");
+        expect(await screen.findByRole("heading", { name: "West Works" })).toBeInTheDocument();
+        expect(
+            fetch.mock.calls.some(([request]) =>
+                new URL((request as Request).url).pathname.endsWith("/accounts/me"),
+            ),
+        ).toBe(false);
+    });
+
+    it("falls back to the list and clears an unavailable account", async () => {
+        localStorage.setItem("lastVisitedAccount:user-1", "deleted-account");
+        vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+            const pathname = new URL((input as Request).url).pathname;
+            if (pathname.endsWith("/accounts/deleted-account")) return json({}, 404);
+            if (pathname.endsWith("/accounts/me"))
+                return json({ items: accounts, totalItems: 2, totalPages: 1 });
+            return json({}, 404);
+        });
+        mount("/app");
+        expect(await screen.findByRole("heading", { name: "All accounts" })).toBeInTheDocument();
+        expect(localStorage.getItem("lastVisitedAccount:user-1")).toBeNull();
+    });
+
+    it("keeps the account list available when a choice is saved", async () => {
+        localStorage.setItem("lastVisitedAccount:user-1", "account-1");
+        vi.spyOn(globalThis, "fetch").mockResolvedValue(
+            json({ items: accounts, totalItems: 2, totalPages: 1 }),
+        );
+        mount("/app/accounts");
+        expect(await screen.findByRole("heading", { name: "All accounts" })).toBeInTheDocument();
+    });
+});
 
 describe("all accounts", () => {
     it("creates an account once, opens it, and refreshes the account list", async () => {
@@ -263,6 +333,7 @@ describe("all accounts", () => {
             expect(
                 await screen.findByRole("heading", { name: "No accounts yet" }),
             ).toBeInTheDocument();
+            expect(localStorage.getItem("lastVisitedAccount:user-1")).toBeNull();
         } finally {
             vi.unstubAllEnvs();
         }
@@ -375,7 +446,7 @@ describe("all accounts", () => {
             within(screen.getByRole("dialog", { name: "Switch account" })).getByRole("link", {
                 name: "All accounts",
             }),
-        ).toHaveAttribute("href", "/app");
+        ).toHaveAttribute("href", "/app/accounts");
     });
 
     it("switches between available accounts from the sidebar", async () => {

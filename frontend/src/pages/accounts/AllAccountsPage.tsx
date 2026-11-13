@@ -77,7 +77,7 @@ export default function AllAccountsPage() {
     return (
         <main className="flex min-h-dvh flex-col items-center bg-card px-5 pb-8 text-foreground">
             <Link
-                to="/app"
+                to="/app/accounts"
                 className="mt-[6vh] inline-flex items-center gap-2 font-display text-2xl font-bold tracking-[-.08em]"
                 aria-label={t("accounts.allAccounts")}
             >

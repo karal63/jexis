@@ -179,7 +179,7 @@ export function AccountSwitcher({
                         )}
                         <div className="mt-2 border-t pt-2">
                             <Link
-                                to="/app"
+                                to="/app/accounts"
                                 onClick={() => setOpen(false)}
                                 className="flex min-h-10 items-center gap-3 rounded-md px-3 text-sm hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
                             >

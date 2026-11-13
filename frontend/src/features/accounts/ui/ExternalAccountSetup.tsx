@@ -92,7 +92,7 @@ export default function ExternalAccountSetup({
         <CenteredPage
             title={t("accounts.externalAccountTitle")}
             description={t("accounts.externalAccountDescription")}
-            backTo="/app"
+            backTo="/app/accounts"
             backLabel={t("accounts.allAccounts")}
         >
             {!publishableKey ? (

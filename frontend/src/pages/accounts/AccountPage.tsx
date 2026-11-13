@@ -8,6 +8,8 @@ import {
 } from "@/features/accounts";
 import { AccountDeletionSection } from "@/features/accounts/ui/AccountDeletionSection";
 import ExternalAccountSetup from "@/features/accounts/ui/ExternalAccountSetup";
+import { setLastVisitedAccount } from "@/features/accounts/model/lastVisitedAccount";
+import { useAppSelector } from "@/app/hooks";
 import { getApiError } from "@/shared/api/apiError";
 import { Button } from "@/shared/ui/button";
 import { CenteredPage } from "@/shared/ui/centered-page";
@@ -33,12 +35,17 @@ function AccountOverview({
     bankAccountSetup: boolean;
 }) {
     const { t } = useI18n();
+    const userId = useAppSelector((state) => state.session.user?.id);
     const {
         data: account,
         error,
         isLoading,
         refetch,
     } = useAccountQuery(accountId, { skip: !accountId });
+
+    useEffect(() => {
+        if (userId && account) setLastVisitedAccount(userId, account.id);
+    }, [userId, account]);
 
     const onboarding = useAccountOnboardingQuery(accountId, {
         skip: !accountId,
@@ -121,7 +128,7 @@ function AccountOverview({
             <CenteredPage
                 title={name}
                 description={onboardingDescription}
-                backTo="/app"
+                backTo="/app/accounts"
                 backLabel={t("accounts.allAccounts")}
             >
                 {onboardingAction}
@@ -139,7 +146,7 @@ function AccountOverview({
                         ? "accounts.onboardingPending"
                         : "accounts.onboardingRestricted",
                 )}
-                backTo="/app"
+                backTo="/app/accounts"
                 backLabel={t("accounts.allAccounts")}
             >
                 {status === "PENDING_VERIFICATION" && (

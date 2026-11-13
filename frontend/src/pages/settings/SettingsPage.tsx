@@ -77,7 +77,7 @@ export default function SettingsPage() {
             <div className="mx-auto w-full max-w-[1200px]">
                 <header className="flex items-center justify-between gap-4 pt-5 sm:pt-6">
                     <Link
-                        to="/app"
+                        to="/app/accounts"
                         className="inline-flex items-center gap-2 font-display text-2xl font-bold tracking-[-.08em]"
                         aria-label={t("accounts.allAccounts")}
                     >

@@ -130,7 +130,7 @@ describe("session lifecycle", () => {
         const store = createAppStore();
         render(
             <Provider store={store}>
-                <MemoryRouter initialEntries={["/app"]}>
+                <MemoryRouter initialEntries={["/app/accounts"]}>
                     <App />
                 </MemoryRouter>
             </Provider>,
@@ -145,7 +145,7 @@ describe("session lifecycle", () => {
         const store = createAppStore();
         render(
             <Provider store={store}>
-                <MemoryRouter initialEntries={["/app"]}>
+                <MemoryRouter initialEntries={["/app/accounts"]}>
                     <App />
                 </MemoryRouter>
             </Provider>,

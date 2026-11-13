@@ -18,6 +18,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { Link, Outlet, useLocation, useMatch, useParams } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import { accountName, useAccountOnboardingQuery, useAccountQuery } from "@/features/accounts";
+import { setLastVisitedAccount } from "@/features/accounts/model/lastVisitedAccount";
 import { setTheme, type Theme } from "@/features/theme/store/themeSlice";
 import { useI18n } from "@/shared/i18n/useI18n";
 import { AccountSwitcher } from "@/shared/ui/account-switcher";
@@ -43,6 +44,10 @@ export default function AccountWorkspaceLayout() {
         [user?.firstName?.[0], user?.lastName?.[0]].filter(Boolean).join("").toUpperCase() ||
         user?.email?.[0]?.toUpperCase() ||
         "?";
+
+    useEffect(() => {
+        if (user?.id && account) setLastVisitedAccount(user.id, account.id);
+    }, [user?.id, account]);
 
     function cancelThemeClose() {
         if (themeCloseTimer.current !== null) window.clearTimeout(themeCloseTimer.current);
@@ -165,7 +170,7 @@ export default function AccountWorkspaceLayout() {
                             <div role="separator" className="my-1 border-t border-border" />
                             <Dialog.Close asChild>
                                 <Link
-                                    to="/app"
+                                    to="/app/accounts"
                                     className="flex min-h-8 items-center gap-2.5 rounded-md px-3 text-sm hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
                                 >
                                     <ArrowLeft aria-hidden="true" size={16} />

@@ -3,6 +3,8 @@ import { useId, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { accountName, useAccountQuery } from "@/features/accounts";
 import { useDeleteAccountMutation } from "@/features/accounts/api/accountsApi";
+import { clearLastVisitedAccount } from "@/features/accounts/model/lastVisitedAccount";
+import { useAppSelector } from "@/app/hooks";
 import { getApiError } from "@/shared/api/apiError";
 import { useI18n } from "@/shared/i18n/useI18n";
 import { Button } from "@/shared/ui/button";
@@ -18,6 +20,7 @@ export function AccountDeletionSection({
     const titleId = useId();
     const { t } = useI18n();
     const navigate = useNavigate();
+    const userId = useAppSelector((state) => state.session.user?.id);
     const { currentData: account } = useAccountQuery(accountId);
     const [confirming, setConfirming] = useState(false);
     const [deleteAccount, { isLoading, error, reset }] = useDeleteAccountMutation();
@@ -33,7 +36,8 @@ export function AccountDeletionSection({
         if (isLoading) return;
         try {
             await deleteAccount(accountId).unwrap();
-            navigate("/app", { replace: true });
+            if (userId) clearLastVisitedAccount(userId, accountId);
+            navigate("/app/accounts", { replace: true });
         } catch {
             // The mutation exposes the error so the user can retry or cancel.
         }
