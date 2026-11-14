@@ -1,30 +1,26 @@
 import { loadStripe } from "@stripe/stripe-js/pure";
 import { useState } from "react";
-import { loadConnectAndInitialize } from "@stripe/connect-js/pure";
-import { ConnectAccountManagement, ConnectComponentsProvider } from "@stripe/react-connect-js";
 import {
-    useBankAccountSessionMutation,
     useCompletePayoutBankSetupMutation,
     usePayoutBankSetupMutation,
 } from "@/features/accounts";
 import { useI18n } from "@/shared/i18n/useI18n";
 import { Button } from "@/shared/ui/button";
 import { CenteredPage } from "@/shared/ui/centered-page";
+import { AccountDeletionSection } from "./AccountDeletionSection";
 
 export default function ExternalAccountSetup({
     accountId,
-    manage,
+    canDelete,
     onExit,
 }: {
     accountId: string;
-    manage: boolean;
+    canDelete: boolean;
     onExit: () => void;
 }) {
     const { t } = useI18n();
     const [startPayoutBankSetup] = usePayoutBankSetupMutation();
     const [completePayoutBankSetup] = useCompletePayoutBankSetupMutation();
-    const [createBankAccountSession] = useBankAccountSessionMutation();
-    const [instance, setInstance] = useState<ReturnType<typeof loadConnectAndInitialize>>();
     const [busy, setBusy] = useState(false);
     const [completedIntent, setCompletedIntent] = useState<string>();
     const [failed, setFailed] = useState(false);
@@ -92,39 +88,15 @@ export default function ExternalAccountSetup({
         }
     }
 
-    function open() {
-        if (!publishableKey) return;
-        setFailed(false);
-        setErrorDetail("");
-        setInstance(
-            loadConnectAndInitialize({
-                publishableKey,
-                fetchClientSecret: async () => {
-                    const session = await createBankAccountSession({
-                        id: accountId,
-                        manage,
-                    }).unwrap();
-                    return session.clientSecret;
-                },
-            }),
-        );
-    }
-
     return (
         <CenteredPage
-            title={t(manage ? "accounts.bankAccountsManage" : "accounts.externalAccountTitle")}
-            description={t(
-                manage ? "accounts.bankAccountsDescription" : "accounts.externalAccountDescription",
-            )}
-            backTo={manage ? `/app/accounts/${accountId}` : "/app"}
-            backLabel={t(manage ? "accounts.accountOverview" : "accounts.allAccounts")}
+            title={t("accounts.externalAccountTitle")}
+            description={t("accounts.externalAccountDescription")}
+            backTo="/app/accounts"
+            backLabel={t("accounts.allAccounts")}
         >
             {!publishableKey ? (
                 <p role="status">{t("accounts.bankAccountUnavailable")}</p>
-            ) : instance && !failed ? (
-                <ConnectComponentsProvider connectInstance={instance}>
-                    <ConnectAccountManagement onLoadError={() => setFailed(true)} />
-                </ConnectComponentsProvider>
             ) : (
                 <>
                     {failed && (
@@ -139,18 +111,13 @@ export default function ExternalAccountSetup({
                         className="w-full"
                         disabled={busy}
                         aria-busy={busy}
-                        onClick={manage ? open : () => void linkBank()}
+                        onClick={() => void linkBank()}
                     >
-                        {t(
-                            failed
-                                ? "accounts.retry"
-                                : manage
-                                  ? "accounts.bankAccountsManage"
-                                  : "accounts.bankAccountConnect",
-                        )}
+                        {t(failed ? "accounts.retry" : "accounts.bankAccountConnect")}
                     </Button>
                 </>
             )}
+            {canDelete && <AccountDeletionSection accountId={accountId} disabled={busy} />}
         </CenteredPage>
     );
 }

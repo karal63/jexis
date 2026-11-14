@@ -3,14 +3,18 @@ import {
     CreditCard,
     KeyRound,
     Leaf,
+    LogOut,
     MonitorSmartphone,
     SunMoon,
     UserRound,
 } from "lucide-react";
 import { useRef, useState, type KeyboardEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import { useLogoutMutation } from "@/features/auth";
 import { ActivationNotice } from "@/features/auth/ui/ActivationNotice";
-import { useAppSelector } from "@/app/hooks";
+import { useAppDispatch, useAppSelector } from "@/app/hooks";
+import { getApiError } from "@/shared/api/apiError";
+import { sessionEnded } from "@/shared/api/sessionEvents";
 import { useI18n } from "@/shared/i18n/useI18n";
 import { cn } from "@/shared/lib/utils";
 import { PersonalInfoForm } from "@/features/profile";
@@ -26,9 +30,32 @@ const tabOrder = SETTINGS_TABS.map((tab) => tab.id);
 
 export default function SettingsPage() {
     const { t } = useI18n();
+    const dispatch = useAppDispatch();
+    const location = useLocation();
+    const previousPage = (location.state as { from?: unknown } | null)?.from;
+    const backTo =
+        typeof previousPage === "string" &&
+        (previousPage === "/app" ||
+            previousPage.startsWith("/app/") ||
+            previousPage.startsWith("/app?")) &&
+        previousPage !== location.pathname
+            ? previousPage
+            : "/app";
     const user = useAppSelector((state) => state.session.user);
+    const [logout, { isLoading: signingOut }] = useLogoutMutation();
+    const [logoutError, setLogoutError] = useState<unknown>(null);
     const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
     const tabRefs = useRef<Partial<Record<SettingsTab, HTMLButtonElement | null>>>({});
+
+    async function signOut() {
+        setLogoutError(null);
+        try {
+            await logout().unwrap();
+            dispatch(sessionEnded());
+        } catch (error) {
+            setLogoutError(error);
+        }
+    }
 
     function handleTabKeyDown(event: KeyboardEvent<HTMLButtonElement>, tab: SettingsTab) {
         const currentIndex = tabOrder.indexOf(tab);
@@ -67,7 +94,7 @@ export default function SettingsPage() {
             <div className="mx-auto w-full max-w-[1200px]">
                 <header className="flex items-center justify-between gap-4 pt-5 sm:pt-6">
                     <Link
-                        to="/app"
+                        to="/app/accounts"
                         className="inline-flex items-center gap-2 font-display text-2xl font-bold tracking-[-.08em]"
                         aria-label={t("accounts.allAccounts")}
                     >
@@ -76,14 +103,30 @@ export default function SettingsPage() {
                         </span>
                         jexis
                     </Link>
-                    <Link
-                        to="/app"
-                        className="inline-flex items-center gap-2 text-xs font-semibold text-brand-leaf hover:underline"
-                    >
-                        <ArrowLeft aria-hidden="true" size={14} />
-                        {t("accounts.allAccounts")}
-                    </Link>
+                    <div className="flex items-center gap-3 sm:gap-5">
+                        <Link
+                            to={backTo}
+                            className="inline-flex items-center gap-2 text-xs font-semibold text-brand-leaf hover:underline"
+                        >
+                            <ArrowLeft aria-hidden="true" size={14} />
+                            {t("settings.back")}
+                        </Link>
+                        <button
+                            type="button"
+                            onClick={signOut}
+                            disabled={signingOut}
+                            className="inline-flex min-h-9 items-center gap-2 rounded-md px-2.5 text-xs font-semibold text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                        >
+                            <LogOut aria-hidden="true" size={14} />
+                            {t(signingOut ? "home.signingOut" : "home.signOut")}
+                        </button>
+                    </div>
                 </header>
+                {logoutError != null && (
+                    <p role="alert" className="mt-2 text-right text-xs text-danger">
+                        {getApiError(logoutError, t).message}
+                    </p>
+                )}
 
                 <div className="mt-8 pb-10 sm:mt-10">
                     <h1 className="font-display text-[27px] font-bold tracking-[-.045em]">

@@ -19,6 +19,7 @@ export interface Account {
 export interface AccountOnboarding {
     status: "NOT_STARTED" | "ACTION_REQUIRED" | "PENDING_VERIFICATION" | "COMPLETED" | "RESTRICTED";
     canOnboard: boolean;
+    canDelete: boolean;
     externalAccountRequired: boolean;
     url: string | null;
 }

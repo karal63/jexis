@@ -1,35 +1,41 @@
 import { useEffect } from "react";
-import { ArrowLeft, Building2 } from "lucide-react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Navigate, useParams } from "react-router-dom";
 import {
     accountName,
     useAccountQuery,
     useAccountOnboardingQuery,
     useCreateOnboardingLinkMutation,
 } from "@/features/accounts";
+import { AccountDeletionSection } from "@/features/accounts/ui/AccountDeletionSection";
+import ExternalAccountSetup from "@/features/accounts/ui/ExternalAccountSetup";
+import { setLastVisitedAccount } from "@/features/accounts/model/lastVisitedAccount";
+import { useAppSelector } from "@/app/hooks";
 import { getApiError } from "@/shared/api/apiError";
 import { Button } from "@/shared/ui/button";
 import { CenteredPage } from "@/shared/ui/centered-page";
 import { PageLoader } from "@/shared/ui/page-loader";
 import { useI18n } from "@/shared/i18n/useI18n";
 
-import ExternalAccountSetup from "./ExternalAccountSetup";
-
-export default function AccountPage({ bankAccountMode }: { bankAccountMode?: "setup" | "manage" }) {
+export default function AccountPage({ bankAccountSetup = false }: { bankAccountSetup?: boolean }) {
     const { accountId = "" } = useParams();
     return (
-        <AccountOverview key={accountId} accountId={accountId} bankAccountMode={bankAccountMode} />
+        <AccountOverview
+            key={accountId}
+            accountId={accountId}
+            bankAccountSetup={bankAccountSetup}
+        />
     );
 }
 
 function AccountOverview({
     accountId,
-    bankAccountMode,
+    bankAccountSetup,
 }: {
     accountId: string;
-    bankAccountMode?: "setup" | "manage";
+    bankAccountSetup: boolean;
 }) {
     const { t } = useI18n();
+    const userId = useAppSelector((state) => state.session.user?.id);
     const {
         data: account,
         error,
@@ -37,9 +43,13 @@ function AccountOverview({
         refetch,
     } = useAccountQuery(accountId, { skip: !accountId });
 
+    useEffect(() => {
+        if (userId && account) setLastVisitedAccount(userId, account.id);
+    }, [userId, account]);
+
     const onboarding = useAccountOnboardingQuery(accountId, {
         skip: !accountId,
-        refetchOnMountOrArgChange: true,
+        refetchOnMountOrArgChange: !bankAccountSetup,
     });
     const [
         createLink,
@@ -63,6 +73,7 @@ function AccountOverview({
 
     const status = onboarding.currentData?.status;
     const canOnboard = onboarding.currentData?.canOnboard;
+    const canDelete = onboarding.currentData?.canDelete ?? false;
     const notStarted = status === "NOT_STARTED";
     const accountError = error ?? onboarding.error;
 
@@ -91,17 +102,16 @@ function AccountOverview({
     const needsExternalAccount =
         status === "COMPLETED" && onboarding.currentData?.externalAccountRequired;
     const accountPath = `/app/accounts/${accountId}`;
+    const deletionSection = canDelete && (
+        <AccountDeletionSection accountId={accountId} disabled={creatingLink || Boolean(link)} />
+    );
 
     if (!accountError && account) {
-        if (bankAccountMode) {
-            const manage = bankAccountMode === "manage";
-            return status === "COMPLETED" &&
-                canOnboard &&
-                (manage ? !needsExternalAccount : needsExternalAccount) ? (
+        if (bankAccountSetup) {
+            return needsExternalAccount && canOnboard ? (
                 <ExternalAccountSetup
-                    key={bankAccountMode}
                     accountId={accountId}
-                    manage={manage}
+                    canDelete={canDelete}
                     onExit={() => void refreshStatus()}
                 />
             ) : (
@@ -113,98 +123,86 @@ function AccountOverview({
         }
     }
 
-    if (!accountError && name && notStarted) {
+    if (!accountError && name && (notStarted || status === "ACTION_REQUIRED")) {
         return (
             <CenteredPage
                 title={name}
                 description={onboardingDescription}
-                backTo="/app"
+                backTo="/app/accounts"
                 backLabel={t("accounts.allAccounts")}
             >
                 {onboardingAction}
+                {deletionSection}
+            </CenteredPage>
+        );
+    }
+
+    if (!accountError && name && (status === "PENDING_VERIFICATION" || status === "RESTRICTED")) {
+        return (
+            <CenteredPage
+                title={name}
+                description={t(
+                    status === "PENDING_VERIFICATION"
+                        ? "accounts.onboardingPending"
+                        : "accounts.onboardingRestricted",
+                )}
+                backTo="/app/accounts"
+                backLabel={t("accounts.allAccounts")}
+            >
+                {status === "PENDING_VERIFICATION" && (
+                    <Button variant="secondary" onClick={() => void refreshStatus()}>
+                        {t("accounts.onboardingCheckStatus")}
+                    </Button>
+                )}
+                {deletionSection}
             </CenteredPage>
         );
     }
 
     return (
-        <main className="min-h-screen bg-background px-5 py-10 text-foreground sm:px-8">
-            <div className="mx-auto max-w-6xl">
-                <Link
-                    to="/app"
-                    className="inline-flex items-center gap-2 text-sm font-semibold text-brand-leaf hover:underline"
-                >
-                    <ArrowLeft size={16} />
-                    {t("accounts.allAccounts")}
-                </Link>
-                {accountError ? (
-                    <div className="mt-12 rounded-lg border border-danger-line bg-danger-bg p-8">
-                        <p role="alert" className="text-danger">
-                            {getApiError(accountError, t).message}
-                        </p>
-                        <Button
-                            className="mt-4"
-                            onClick={() => {
-                                void refetch();
-                                void refreshStatus();
-                            }}
-                        >
-                            {t("accounts.retry")}
-                        </Button>
-                    </div>
-                ) : account ? (
-                    <section className="mt-12 rounded-lg border border-border bg-card p-8">
-                        <span className="grid size-12 place-items-center rounded-lg bg-accent text-brand-leaf">
-                            <Building2 size={23} />
-                        </span>
+        <>
+            {accountError ? (
+                <div className="rounded-lg border border-danger-line bg-danger-bg p-6">
+                    <p role="alert" className="text-danger">
+                        {getApiError(accountError, t).message}
+                    </p>
+                    <Button
+                        className="mt-4"
+                        onClick={() => {
+                            void refetch();
+                            void refreshStatus();
+                        }}
+                    >
+                        {t("accounts.retry")}
+                    </Button>
+                </div>
+            ) : account ? (
+                <section aria-labelledby="account-title">
+                    <div className="border-b pb-6">
                         {status === "COMPLETED" && (
-                            <p className="mt-7 text-xs font-bold uppercase tracking-[.14em] text-brand-leaf">
+                            <p className="mb-2 text-sm text-muted-foreground">
                                 {t("accounts.accountOverview")}
                             </p>
                         )}
-                        <h1 className="mt-2 font-display text-3xl font-bold">{name}</h1>
+                        <h1
+                            id="account-title"
+                            className="wrap-anywhere font-display text-3xl font-bold tracking-tight"
+                        >
+                            {name}
+                        </h1>
                         {account.email && (
-                            <p className="mt-2 text-sm text-muted-foreground">{account.email}</p>
-                        )}
-                        {status === "COMPLETED" && canOnboard && (
-                            <Button className="mt-4" to={`${accountPath}/bank-accounts`}>
-                                {t("accounts.bankAccountsManage")}
-                            </Button>
-                        )}
-                        {needsExternalAccount && !canOnboard && (
-                            <p className="mt-4 text-sm text-muted-foreground">
-                                {t("accounts.externalAccountContactAdmin")}
+                            <p className="mt-2 wrap-anywhere text-sm text-muted-foreground">
+                                {account.email}
                             </p>
                         )}
-                        {status === "ACTION_REQUIRED" && (
-                            <>
-                                <p className="mt-4 text-sm text-muted-foreground">
-                                    {onboardingDescription}
-                                </p>
-                                {onboardingAction}
-                            </>
-                        )}
-                        {status === "PENDING_VERIFICATION" && (
-                            <>
-                                <p role="status" className="mt-4 text-sm text-muted-foreground">
-                                    {t("accounts.onboardingPending")}
-                                </p>
-                                <Button
-                                    variant="secondary"
-                                    className="mt-4"
-                                    onClick={() => void refreshStatus()}
-                                >
-                                    {t("accounts.onboardingCheckStatus")}
-                                </Button>
-                            </>
-                        )}
-                        {status === "RESTRICTED" && (
-                            <p role="status" className="mt-4 text-sm text-muted-foreground">
-                                {t("accounts.onboardingRestricted")}
-                            </p>
-                        )}
-                    </section>
-                ) : null}
-            </div>
-        </main>
+                    </div>
+                    {needsExternalAccount && !canOnboard && (
+                        <p className="mt-4 text-sm text-muted-foreground">
+                            {t("accounts.externalAccountContactAdmin")}
+                        </p>
+                    )}
+                </section>
+            ) : null}
+        </>
     );
 }

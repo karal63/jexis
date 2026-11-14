@@ -69,13 +69,15 @@ class AccountOnboardingUseCaseTest {
         var type = AccountLinkCreateParams.Type.ACCOUNT_ONBOARDING;
         when(links.execute(connectId, accountId, type)).thenReturn(firstLink, secondLink);
 
-        assertThat(onboarding.getStatus(accountId, true).status()).isEqualTo(OnboardingStatus.NOT_STARTED);
+        var initialStatus = onboarding.getStatus(accountId, true, true);
+        assertThat(initialStatus.status()).isEqualTo(OnboardingStatus.NOT_STARTED);
+        assertThat(initialStatus.canDelete()).isTrue();
         verifyNoInteractions(links);
-        assertThat(onboarding.createLink(accountId).url()).isEqualTo(firstLink.getUrl());
-        assertThat(onboarding.createLink(accountId).url()).isEqualTo(secondLink.getUrl());
+        assertThat(onboarding.createLink(accountId, true).url()).isEqualTo(firstLink.getUrl());
+        assertThat(onboarding.createLink(accountId, true).url()).isEqualTo(secondLink.getUrl());
 
         stripeAccount.setDetailsSubmitted(true);
-        var result = onboarding.createLink(accountId);
+        var result = onboarding.createLink(accountId, true);
         assertThat(result.status()).isEqualTo(OnboardingStatus.PENDING_VERIFICATION);
         assertThat(result.url()).isNull();
         var requirements = new Account.Requirements();
@@ -88,13 +90,14 @@ class AccountOnboardingUseCaseTest {
         capabilities.setTreasury("active");
         stripeAccount.setCapabilities(capabilities);
 
-        var status = onboarding.getStatus(accountId, true);
+        var status = onboarding.getStatus(accountId, true, false);
         assertThat(status.status()).isEqualTo(OnboardingStatus.COMPLETED);
         assertThat(status.externalAccountRequired()).isTrue();
-        assertThat(onboarding.createLink(accountId).url()).isNull();
+        assertThat(status.canDelete()).isFalse();
+        assertThat(onboarding.createLink(accountId, true).url()).isNull();
 
         requirements.setCurrentlyDue(List.of("external_account", "individual.id_number"));
-        assertThat(onboarding.getStatus(accountId, true).status()).isEqualTo(OnboardingStatus.ACTION_REQUIRED);
+        assertThat(onboarding.getStatus(accountId, true, true).status()).isEqualTo(OnboardingStatus.ACTION_REQUIRED);
 
         verify(links, times(2)).execute(connectId, accountId, type);
     }
