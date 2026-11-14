@@ -36,6 +36,45 @@ function mount(user = accountUser) {
 }
 
 describe("settings", () => {
+    it("signs out from the settings page", async () => {
+        const fetch = vi
+            .spyOn(globalThis, "fetch")
+            .mockImplementation(async (input) =>
+                (input as Request).url.endsWith("/auth/logout")
+                    ? new Response(null, { status: 204 })
+                    : new Response("Not found", { status: 404 }),
+            );
+        const store = mount();
+        const browser = userEvent.setup();
+
+        await browser.click(await screen.findByRole("button", { name: "Sign out" }));
+        expect(await screen.findByRole("heading", { name: "Welcome back" })).toBeInTheDocument();
+        expect(store.getState().session.user).toBeNull();
+        expect(fetch).toHaveBeenCalledWith(
+            expect.objectContaining({
+                method: "POST",
+                url: expect.stringContaining("/auth/logout"),
+                credentials: "include",
+            }),
+        );
+    });
+
+    it("shows logout errors and keeps the user on settings", async () => {
+        vi.spyOn(globalThis, "fetch").mockImplementation(async (input) =>
+            (input as Request).url.endsWith("/auth/logout")
+                ? new Response("Error", { status: 503 })
+                : new Response("Not found", { status: 404 }),
+        );
+        const store = mount();
+        const browser = userEvent.setup();
+
+        await browser.click(await screen.findByRole("button", { name: "Sign out" }));
+        expect(await screen.findByRole("alert")).toHaveTextContent("Unable to connect");
+        expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Sign out" })).toBeEnabled();
+        expect(store.getState().session.status).toBe("authenticated");
+    });
+
     it("resends the activation email and shares feedback with the account banner", async () => {
         const fetch = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
             const request = input as Request;
