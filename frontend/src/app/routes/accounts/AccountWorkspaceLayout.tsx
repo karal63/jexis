@@ -8,6 +8,7 @@ import {
     CreditCard,
     Landmark,
     LayoutDashboard,
+    LogOut,
     Settings,
     SunMoon,
     UserRound,
@@ -19,7 +20,10 @@ import { Link, Outlet, useLocation, useMatch, useParams } from "react-router-dom
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import { accountName, useAccountOnboardingQuery, useAccountQuery } from "@/features/accounts";
 import { setLastVisitedAccount } from "@/features/accounts/model/lastVisitedAccount";
+import { useLogoutMutation } from "@/features/auth";
 import { setTheme, type Theme } from "@/features/theme/store/themeSlice";
+import { getApiError } from "@/shared/api/apiError";
+import { sessionEnded } from "@/shared/api/sessionEvents";
 import { useI18n } from "@/shared/i18n/useI18n";
 import { AccountSwitcher } from "@/shared/ui/account-switcher";
 import { WorkspaceShell, WorkspaceSidebar } from "@/shared/ui/workspace-shell";
@@ -33,6 +37,8 @@ export default function AccountWorkspaceLayout() {
     const theme = useAppSelector((state) => state.theme.theme);
     const [themeOpen, setThemeOpen] = useState(false);
     const themeCloseTimer = useRef<number | null>(null);
+    const [logout, { isLoading: signingOut }] = useLogoutMutation();
+    const [logoutError, setLogoutError] = useState<unknown>(null);
     const { data: account } = useAccountQuery(accountId, { skip: !accountId });
     const { currentData: onboarding } = useAccountOnboardingQuery(accountId, {
         skip: !accountId,
@@ -57,6 +63,16 @@ export default function AccountWorkspaceLayout() {
     function closeThemeSoon() {
         cancelThemeClose();
         themeCloseTimer.current = window.setTimeout(() => setThemeOpen(false), 120);
+    }
+
+    async function signOut() {
+        setLogoutError(null);
+        try {
+            await logout().unwrap();
+            dispatch(sessionEnded());
+        } catch (error) {
+            setLogoutError(error);
+        }
     }
 
     useEffect(
@@ -186,6 +202,21 @@ export default function AccountWorkspaceLayout() {
                             >
                                 <CreditCard aria-hidden="true" size={16} />
                                 {t("accounts.subscription")}
+                            </button>
+                            <div role="separator" className="my-1 border-t border-border" />
+                            {logoutError != null && (
+                                <p role="alert" className="px-3 py-1 text-xs text-danger">
+                                    {getApiError(logoutError, t).message}
+                                </p>
+                            )}
+                            <button
+                                type="button"
+                                onClick={signOut}
+                                disabled={signingOut}
+                                className="flex min-h-8 w-full items-center gap-2.5 rounded-md px-3 text-left text-sm hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50"
+                            >
+                                <LogOut aria-hidden="true" size={16} />
+                                {t(signingOut ? "home.signingOut" : "home.signOut")}
                             </button>
                         </Dialog.Content>
                     </Dialog.Root>

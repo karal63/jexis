@@ -475,6 +475,59 @@ describe("all accounts", () => {
         expect(await screen.findByRole("heading", { name: "West Works" })).toBeInTheDocument();
     });
 
+    it("signs out from the profile menu", async () => {
+        const fetch = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+            const request = input as Request;
+            const url = new URL(request.url);
+            if (url.pathname.endsWith("/auth/logout")) return new Response(null, { status: 204 });
+            if (url.pathname.endsWith("/accounts/account-1")) return json(accounts[0]);
+            if (url.pathname.endsWith("/accounts/account-1/onboarding")) {
+                return json({ status: "COMPLETED", canOnboard: false, url: null });
+            }
+            return json({}, 404);
+        });
+        mount("/app/accounts/account-1");
+        const browser = userEvent.setup();
+        await screen.findByRole("heading", { name: "North Studio" });
+        await browser.click(screen.getByRole("button", { name: "Profile menu" }));
+        await browser.click(
+            within(screen.getByRole("dialog", { name: "Profile menu" })).getByRole("button", {
+                name: "Sign out",
+            }),
+        );
+
+        expect(await screen.findByRole("heading", { name: "Welcome back" })).toBeInTheDocument();
+        expect(fetch).toHaveBeenCalledWith(
+            expect.objectContaining({
+                method: "POST",
+                url: expect.stringContaining("/auth/logout"),
+                credentials: "include",
+            }),
+        );
+    });
+
+    it("shows logout errors in the profile menu and keeps the session", async () => {
+        vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+            const url = new URL((input as Request).url);
+            if (url.pathname.endsWith("/auth/logout")) return json({}, 503);
+            if (url.pathname.endsWith("/accounts/account-1")) return json(accounts[0]);
+            if (url.pathname.endsWith("/accounts/account-1/onboarding")) {
+                return json({ status: "COMPLETED", canOnboard: false, url: null });
+            }
+            return json({}, 404);
+        });
+        mount("/app/accounts/account-1");
+        const browser = userEvent.setup();
+        await screen.findByRole("heading", { name: "North Studio" });
+        await browser.click(screen.getByRole("button", { name: "Profile menu" }));
+        const menu = screen.getByRole("dialog", { name: "Profile menu" });
+        await browser.click(within(menu).getByRole("button", { name: "Sign out" }));
+
+        expect(await within(menu).findByRole("alert")).toHaveTextContent("Something went wrong");
+        expect(within(menu).getByRole("button", { name: "Sign out" })).toBeEnabled();
+        expect(screen.getByRole("heading", { name: "North Studio" })).toBeInTheDocument();
+    });
+
     it("changes theme from the profile menu and returns from user settings", async () => {
         vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
             const url = new URL((input as Request).url);
@@ -499,7 +552,7 @@ describe("all accounts", () => {
             await screen.findByRole("heading", { name: "North Studio" });
             await browser.click(screen.getByRole("button", { name: "Profile menu" }));
             const menu = screen.getByRole("dialog", { name: "Profile menu" });
-            expect(within(menu).getAllByRole("separator")).toHaveLength(3);
+            expect(within(menu).getAllByRole("separator")).toHaveLength(4);
             const themeButton = within(menu).getByRole("button", { name: "Theme" });
             expect(themeButton).toHaveAttribute("aria-expanded", "false");
             expect(within(menu).queryByRole("group", { name: "Theme" })).toBeNull();
